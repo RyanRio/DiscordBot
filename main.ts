@@ -137,19 +137,20 @@ bot.on("message", async message => {
   else {
     // parse
     let swearFound = false
-    let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick"]
+    let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"]
+    let puncList = ["?"," ",".",";"]
     for(let swear of swearList) {
       let location = message.content.toLowerCase().search(swear)
       if(location!==-1) {
         if(location===0) {
           console.log("location is 0: " + message.content)
-          if(message.content[swear.length]===" " || message.content.length===swear.length) {
+          if(find(message.content[swear.length], puncList) || message.content.length===swear.length) {
             message.delete()
             message.channel.send("No swearing in this good doggy channel!")
             console.log("found swear")
           }
         }
-        else if((message.content[location-1]===" " && message.content[swear.length+location]===" ") || (message.content[location-1]===" " && message.content.length-location-swear.length===0)) {
+        else if((find(message.content[location-1], puncList) && find(message.content[swear.length+location], puncList)) || (find(message.content[location-1], puncList) && message.content.length-location-swear.length===0)) {
           message.delete()
           message.channel.send("No swearing in this good doggy channel!")
           console.log("found swear")
@@ -289,6 +290,22 @@ bot.on("message", async message => {
 
 });
 
+function find(valueToSearhFor: string, valuesToSearchAgainst: string[]): boolean {
+  let res = valuesToSearchAgainst.find((value) => {
+    if (value === valueToSearhFor) {
+        return true        
+    }
+    else {
+        return false
+    }
+
+  })
+
+  if(res!==undefined) {
+    return true
+  }
+  return false
+}
 /**
  * returns reference to the class in people
  * @param initialClass 
