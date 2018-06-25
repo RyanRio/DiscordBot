@@ -156,22 +156,6 @@ bot.on("message", async message => {
         }
       }
     }
-      /*
-      if(location!==-1) {
-        if(location===0) {
-          if(message.content[value.length+1]===" " || message.content.length===value.length) {
-            message.delete()
-            message.channel.send("No swearing in this good doggy channel!")
-            console.log("found swear")
-          }
-        }
-        else if((message.content[location-1]===" " && message.content[location+1]===" ") || (message.content[location-1]===" " && message.content.length-location-value.length===0)) {
-          message.delete()
-          message.channel.send("No swearing in this good doggy channel!")
-        }
-      }
-      */
-
     /*
     Disgusting old code before I remembered that a search function existed
     let index = 0
