@@ -137,25 +137,40 @@ bot.on("message", async message => {
   else {
     // parse
     let swearFound = false
-    let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell"]
-    swearList.forEach(value => {
-      let location = message.content.search(value)
+    let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick"]
+    for(let swear of swearList) {
+      let location = message.content.toLowerCase().search(swear)
+      if(location!==-1) {
+        if(location===0) {
+          console.log("location is 0: " + message.content)
+          if(message.content[swear.length]===" " || message.content.length===swear.length) {
+            message.delete()
+            message.channel.send("No swearing in this good doggy channel!")
+            console.log("found swear")
+          }
+        }
+        else if((message.content[location-1]===" " && message.content[swear.length+location]===" ") || (message.content[location-1]===" " && message.content.length-location-swear.length===0)) {
+          message.delete()
+          message.channel.send("No swearing in this good doggy channel!")
+          console.log("found swear")
+        }
+      }
+    }
+      /*
       if(location!==-1) {
         if(location===0) {
           if(message.content[value.length+1]===" " || message.content.length===value.length) {
-            swearFound = true
+            message.delete()
+            message.channel.send("No swearing in this good doggy channel!")
+            console.log("found swear")
           }
         }
         else if((message.content[location-1]===" " && message.content[location+1]===" ") || (message.content[location-1]===" " && message.content.length-location-value.length===0)) {
-          swearFound = true
+          message.delete()
+          message.channel.send("No swearing in this good doggy channel!")
         }
       }
-    })
-
-    if(swearFound) {
-      message.delete()
-      message.channel.send("No swearing in this good doggy channel!")
-    }
+      */
 
     /*
     Disgusting old code before I remembered that a search function existed

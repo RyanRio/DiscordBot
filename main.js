@@ -63,7 +63,7 @@ var obj = {};
 var channel;
 var channelAssigned = false;
 bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, function () {
-    var args, cmd, rest, emojiList, res, msg, initialClass, postEdit, foundClass, me, swearFound_1, swearList;
+    var args, cmd, rest, emojiList, res, msg, initialClass, postEdit, foundClass, me, swearFound, swearList, _i, swearList_1, swear, location;
     return __generator(this, function (_a) {
         if (message.content[0] == "+") {
             args = message.content.substring(1).split(' ');
@@ -141,25 +141,42 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             }
         }
         else {
-            swearFound_1 = false;
-            swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell"];
-            swearList.forEach(function (value) {
-                var location = message.content.search(value);
+            swearFound = false;
+            swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick"];
+            for (_i = 0, swearList_1 = swearList; _i < swearList_1.length; _i++) {
+                swear = swearList_1[_i];
+                location = message.content.toLowerCase().search(swear);
                 if (location !== -1) {
                     if (location === 0) {
-                        if (message.content[value.length + 1] === " " || message.content.length === value.length) {
-                            swearFound_1 = true;
+                        console.log("location is 0: " + message.content);
+                        if (message.content[swear.length] === " " || message.content.length === swear.length) {
+                            message.delete();
+                            message.channel.send("No swearing in this good doggy channel!");
+                            console.log("found swear");
                         }
                     }
-                    else if ((message.content[location - 1] === " " && message.content[location + 1] === " ") || (message.content[location - 1] === " " && message.content.length - location - value.length === 0)) {
-                        swearFound_1 = true;
+                    else if ((message.content[location - 1] === " " && message.content[swear.length + location] === " ") || (message.content[location - 1] === " " && message.content.length - location - swear.length === 0)) {
+                        message.delete();
+                        message.channel.send("No swearing in this good doggy channel!");
+                        console.log("found swear");
                     }
                 }
-            });
-            if (swearFound_1) {
-                message.delete();
-                message.channel.send("No swearing in this good doggy channel!");
             }
+            /*
+            if(location!==-1) {
+              if(location===0) {
+                if(message.content[value.length+1]===" " || message.content.length===value.length) {
+                  message.delete()
+                  message.channel.send("No swearing in this good doggy channel!")
+                  console.log("found swear")
+                }
+              }
+              else if((message.content[location-1]===" " && message.content[location+1]===" ") || (message.content[location-1]===" " && message.content.length-location-value.length===0)) {
+                message.delete()
+                message.channel.send("No swearing in this good doggy channel!")
+              }
+            }
+            */
             /*
             Disgusting old code before I remembered that a search function existed
             let index = 0
