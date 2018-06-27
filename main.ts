@@ -2,11 +2,22 @@ import * as fs from "fs";
 import * as Discord from "discord.js";
 const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
 
-interface Person {
-  classes: NEUClass[]
-  id: string;
+interface People {
+  [id: string] : PersonInfo
 }
 
+interface Test {
+  [id: string]: ()=> number
+}
+
+let a: Test = {
+
+}
+
+interface PersonInfo {
+  classes: NEUClass[],
+  swearNumber: number
+}
 interface NEUClass {
   // CS or ...
   type: string,
@@ -16,11 +27,12 @@ interface NEUClass {
 
 let bot = new Discord.Client()
 
+let people: People = {
 
-let people: Person[] = [];
+}
 
 bot.on("ready", function() {
-   let wGuild = bot.guilds.get("432343677759651841")
+  let wGuild = bot.guilds.get("432343677759651841")
   if(wGuild) {
     let wChannel: any = wGuild.channels
     .filter(wGuild => wGuild.type === "text" &&
@@ -30,8 +42,6 @@ bot.on("ready", function() {
       wChannel.send("Hello! " + bot.emojis.find("name", "monkaCozy"))
     }
   }
-
-  people = JSON.parse(fs.readFileSync("recallPeople.json").toString())
 });
 
 
@@ -46,7 +56,12 @@ let channel: any
 let channelAssigned = false;
 bot.on("message", async message => {
 
-  
+  /*
+  if(message.author.username==="saulbot") {
+    message.channel.send("worthless bot, don't listen to him")
+  }
+  */
+
   if(message.content[0]=="+") {
     
     let args = message.content.substring(1).split(' ');
@@ -101,8 +116,8 @@ bot.on("message", async message => {
 
     if(cmd == "addClasses") {
       console.log("check2")
-      let res = buildFromParse(rest, message.author)
-      message.channel.send("You are taking: " + JSON.stringify(res))
+      buildFromParse(rest, message.author)
+      message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]))
     }
 
     if(cmd == "editClass") {
@@ -123,7 +138,7 @@ bot.on("message", async message => {
     }
 
     if(cmd === "myClasses") {
-      let me = people.find(person => person.id===message.author.id)
+      let me = people[message.author.id]
       if(me) {
         message.channel.send(JSON.stringify(me))
       }
@@ -136,46 +151,26 @@ bot.on("message", async message => {
   }
   else {
     // parse
-    let swearFound = false
+    let swearFound = 0
     let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"]
     let puncList = ["?"," ",".",";"]
-    for(let swear of swearList) {
-      let location = message.content.toLowerCase().search(swear)
-      if(location!==-1) {
-        if(location===0) {
-          console.log("location is 0: " + message.content)
-          if(find(message.content[swear.length], puncList) || message.content.length===swear.length) {
-            message.delete()
-            message.channel.send("No swearing in this good doggy channel!")
-            console.log("found swear")
-          }
-        }
-        else if((find(message.content[location-1], puncList) && find(message.content[swear.length+location], puncList)) || (find(message.content[location-1], puncList) && message.content.length-location-swear.length===0)) {
-          message.delete()
-          message.channel.send("No swearing in this good doggy channel!")
-          console.log("found swear")
-        }
-      }
+
+    let messageWords = message.content.toLowerCase().split(' ');
+
+    messageWords.forEach(word=> {
+      swearList.forEach(swear => {
+        if (word===swear)
+        swearFound++
+      })
+    })
+
+    if(swearFound>0) {
+      message.delete()
+      message.channel.send("No swearing in this good doggy channel!")
     }
   }
 });
 
-function find(valueToSearhFor: string, valuesToSearchAgainst: string[]): boolean {
-  let res = valuesToSearchAgainst.find((value) => {
-    if (value === valueToSearhFor) {
-        return true        
-    }
-    else {
-        return false
-    }
-
-  })
-
-  if(res!==undefined) {
-    return true
-  }
-  return false
-}
 /**
  * returns reference to the class in people
  * @param initialClass 
@@ -183,7 +178,7 @@ function find(valueToSearhFor: string, valuesToSearchAgainst: string[]): boolean
  */
 function lookForReference(initialClass: NEUClass, author:Discord.User): NEUClass | undefined {
   let asdfClass: NEUClass | undefined
-  let me = people.find(person => person.id===author.id)
+  let me = people[author.id]
   if(me) {
     asdfClass = me.classes.find(sClass => {
       if (sClass.classNumber === initialClass.classNumber) {
@@ -204,17 +199,12 @@ function buildFromParse(classList: string, author: Discord.User) {
   console.log("check3")
   let returnCheck = checkIfExists(authorID);
   console.log("check 5..." + JSON.stringify(returnCheck))
-  let newPerson: Person
-  if(returnCheck === undefined) {
-    newPerson = {
+  if(returnCheck===undefined) {
+    people[authorID] = {
       classes: [],
-      id: ""
+      swearNumber: 0
     }
   }
-  else  {
-    newPerson = returnCheck
-  }
-  newPerson.id = authorID
   // begin parsing... classes need to be of format (*area of study**number* *section*,)**
   let splitClassList = classList.split(",");
   if(splitClassList[1][0]==" ") {
@@ -244,14 +234,9 @@ function buildFromParse(classList: string, author: Discord.User) {
       }
       index++
     }
-    newPerson.classes.push(newClass)
+    console.log("adding class")
+    people[author.id].classes.push(newClass)
   }
-
-  if(returnCheck === undefined) {
-    people.push(newPerson)
-  }
-  console.log("result: " + JSON.stringify(newPerson))
-  return newPerson
 }
 
 /**
@@ -285,15 +270,13 @@ function parse(classList: string) {
   return newClass
 }
 
-function checkIfExists(authorID: string): Person | undefined {
+function checkIfExists(authorID: string): PersonInfo | undefined {
   console.log("check4")
-  for (let person of people) {
-    if(person.id === authorID) {
-      return person
-    }
+  if(people[authorID]!==undefined) {
+    return people[authorID]
   }
   console.log("about to return from checkifexists")
   return undefined;
 }
 
-bot.login(auth.token);
+//bot.login(auth.token);

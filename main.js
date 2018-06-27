@@ -39,8 +39,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var Discord = require("discord.js");
 var auth = JSON.parse(fs.readFileSync("./auth.json").toString());
+var a = {};
+a["abc"] = function () {
+    return 2;
+};
+console.log(a["abc"]());
 var bot = new Discord.Client();
-var people = [];
+var people = {};
 bot.on("ready", function () {
     var wGuild = bot.guilds.get("432343677759651841");
     if (wGuild) {
@@ -51,7 +56,6 @@ bot.on("ready", function () {
             wChannel.send("Hello! " + bot.emojis.find("name", "monkaCozy"));
         }
     }
-    people = JSON.parse(fs.readFileSync("recallPeople.json").toString());
 });
 bot.on("messageDelete", function (message) {
     if (channel) {
@@ -63,8 +67,13 @@ var obj = {};
 var channel;
 var channelAssigned = false;
 bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, function () {
-    var args, cmd, rest, emojiList, res, msg, initialClass, postEdit, foundClass, me, swearFound, swearList, puncList, _i, swearList_1, swear, location;
+    var args, cmd, rest, emojiList, msg, initialClass, postEdit, foundClass, me, swearFound_1, swearList_1, puncList, messageWords;
     return __generator(this, function (_a) {
+        /*
+        if(message.author.username==="saulbot") {
+          message.channel.send("worthless bot, don't listen to him")
+        }
+        */
         if (message.content[0] == "+") {
             args = message.content.substring(1).split(' ');
             cmd = args[0];
@@ -111,8 +120,8 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             }
             if (cmd == "addClasses") {
                 console.log("check2");
-                res = buildFromParse(rest, message.author);
-                message.channel.send("You are taking: " + JSON.stringify(res));
+                buildFromParse(rest, message.author);
+                message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]));
             }
             if (cmd == "editClass") {
                 msg = rest.split("=>");
@@ -130,7 +139,7 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 message.channel.send("Data saved...");
             }
             if (cmd === "myClasses") {
-                me = people.find(function (person) { return person.id === message.author.id; });
+                me = people[message.author.id];
                 if (me) {
                     message.channel.send(JSON.stringify(me));
                 }
@@ -141,175 +150,24 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             }
         }
         else {
-            swearFound = false;
-            swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"];
+            swearFound_1 = 0;
+            swearList_1 = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"];
             puncList = ["?", " ", ".", ";"];
-            for (_i = 0, swearList_1 = swearList; _i < swearList_1.length; _i++) {
-                swear = swearList_1[_i];
-                location = message.content.toLowerCase().search(swear);
-                if (location !== -1) {
-                    if (location === 0) {
-                        console.log("location is 0: " + message.content);
-                        if (find(message.content[swear.length], puncList) || message.content.length === swear.length) {
-                            message.delete();
-                            message.channel.send("No swearing in this good doggy channel!");
-                            console.log("found swear");
-                        }
-                    }
-                    else if ((find(message.content[location - 1], puncList) && find(message.content[swear.length + location], puncList)) || (find(message.content[location - 1], puncList) && message.content.length - location - swear.length === 0)) {
-                        message.delete();
-                        message.channel.send("No swearing in this good doggy channel!");
-                        console.log("found swear");
-                    }
-                }
+            messageWords = message.content.toLowerCase().split(' ');
+            messageWords.forEach(function (word) {
+                swearList_1.forEach(function (swear) {
+                    if (word === swear)
+                        swearFound_1++;
+                });
+            });
+            if (swearFound_1 > 0) {
+                message.delete();
+                message.channel.send("No swearing in this good doggy channel!");
             }
-            /*
-            Disgusting old code before I remembered that a search function existed
-            let index = 0
-            let swearFound = {exists:false, type: "null"}
-        
-        
-            while(index < message.content.length) {
-              const cChar = message.content.charAt(index)
-              switch(cChar) {
-                case "s": {
-                  if(index===0) {
-                    if(message.content.substring(index, index + 5)==="shit ") {
-                      swearFound.exists = true
-                      swearFound.type = "s"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                    else if(message.content.substring(index, index + 4)==="shit" && message.content.length === index + 4) {
-                      swearFound.exists = true
-                      swearFound.type = "f"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                  }
-                  else if(message.content.substring(index-1, index + 5)===" shit ") {
-                    swearFound.exists = true
-                    swearFound.type = "s"
-                    message.delete()
-                    message.channel.send("no swearing on this good christian server")
-                  }
-                  break
-                }
-                case "f": {
-                  if(index===0) {
-                    if(message.content.substring(index, index + 5)==="fuck ") {
-                      swearFound.exists = true
-                      swearFound.type = "f"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                    else if(message.content.substring(index, index + 4)==="fuck" && message.content.length === index + 4) {
-                      swearFound.exists = true
-                      swearFound.type = "f"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                  }
-                  else if(message.content.substring(index-1, index + 5)===" fuck ") {
-                    swearFound.exists = true
-                    swearFound.type = "f"
-                    message.delete()
-                    message.channel.send("no swearing on this good christian server")
-                  }
-                  break
-                }
-                case "a": {
-                  if(index===0) {
-                    console.log(`"${message.content}"`)
-                    if(message.content.substring(index, index + 4)==="ass ") {
-                      swearFound.exists = true
-                      swearFound.type = "a"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                    else if(message.content.substring(index, index + 3)==="ass" && message.content.length === index + 3) {
-                      swearFound.exists = true
-                      swearFound.type = "a"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                  }
-                  else if(message.content.substring(index-1, index + 4)===" ass ") {
-                    swearFound.exists = true
-                    swearFound.type = "a"
-                    message.delete()
-                    message.channel.send("no swearing on this good christian server")
-                  }
-                  break
-                }
-                case "b": {
-                  if(index===0) {
-                    if(message.content.substring(index, index + 6)==="bitch ") {
-                      swearFound.exists = true
-                      swearFound.type = "b"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                    else if(message.content.substring(index, index + 5)==="bitch" && message.content.length === index + 5) {
-                      swearFound.exists = true
-                      swearFound.type = "b"
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                  }
-                  else if(message.content.substring(index-1, index + 6)===" bitch ") {
-                    swearFound.exists = true
-                    swearFound.type = "b"
-                    message.delete()
-                    message.channel.send("no swearing on this good christian server")
-                  }
-                  break
-                }
-                case "g": {
-                  let swear1 = "goddamn"
-                  let sLength = "goddamn".length
-                  if(index===0) {
-                    if(message.content.substring(index, index + sLength + 1)===swear1 + " ") {
-                      swearFound.exists = true
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                    else if(message.content.substring(index, index + sLength)===swear1 && message.content.length === index + sLength) {
-                      swearFound.exists = true
-                      message.delete()
-                      message.channel.send("no swearing on this good christian server")
-                    }
-                  }
-                  else if(message.content.substring(index-1, index + sLength)===" " + swear1 + " ") {
-                    swearFound.exists = true
-                    message.delete()
-                    message.channel.send("no swearing on this good christian server")
-                  }
-                  break
-                }
-              }
-              index++
-            }
-            swearFound.exists = false
-            */
         }
         return [2 /*return*/];
     });
 }); });
-function find(valueToSearhFor, valuesToSearchAgainst) {
-    var res = valuesToSearchAgainst.find(function (value) {
-        if (value === valueToSearhFor) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    });
-    if (res !== undefined) {
-        return true;
-    }
-    return false;
-}
 /**
  * returns reference to the class in people
  * @param initialClass
@@ -317,7 +175,7 @@ function find(valueToSearhFor, valuesToSearchAgainst) {
  */
 function lookForReference(initialClass, author) {
     var asdfClass;
-    var me = people.find(function (person) { return person.id === author.id; });
+    var me = people[author.id];
     if (me) {
         asdfClass = me.classes.find(function (sClass) {
             if (sClass.classNumber === initialClass.classNumber) {
@@ -338,17 +196,12 @@ function buildFromParse(classList, author) {
     console.log("check3");
     var returnCheck = checkIfExists(authorID);
     console.log("check 5..." + JSON.stringify(returnCheck));
-    var newPerson;
     if (returnCheck === undefined) {
-        newPerson = {
+        people[authorID] = {
             classes: [],
-            id: ""
+            swearNumber: 0
         };
     }
-    else {
-        newPerson = returnCheck;
-    }
-    newPerson.id = authorID;
     // begin parsing... classes need to be of format (*area of study**number* *section*,)**
     var splitClassList = classList.split(",");
     if (splitClassList[1][0] == " ") {
@@ -378,13 +231,9 @@ function buildFromParse(classList, author) {
             }
             index++;
         }
-        newPerson.classes.push(newClass);
+        console.log("adding class");
+        people[author.id].classes.push(newClass);
     }
-    if (returnCheck === undefined) {
-        people.push(newPerson);
-    }
-    console.log("result: " + JSON.stringify(newPerson));
-    return newPerson;
 }
 /**
  * function for modifying a class later on
@@ -416,14 +265,11 @@ function parse(classList) {
 }
 function checkIfExists(authorID) {
     console.log("check4");
-    for (var _i = 0, people_1 = people; _i < people_1.length; _i++) {
-        var person = people_1[_i];
-        if (person.id === authorID) {
-            return person;
-        }
+    if (people[authorID] !== undefined) {
+        return people[authorID];
     }
     console.log("about to return from checkifexists");
     return undefined;
 }
-bot.login(auth.token);
+//bot.login(auth.token);
 //# sourceMappingURL=main.js.map
