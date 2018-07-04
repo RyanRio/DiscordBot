@@ -5,15 +5,6 @@ const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
 interface People {
   [id: string] : PersonInfo
 }
-
-interface Test {
-  [id: string]: ()=> number
-}
-
-let a: Test = {
-
-}
-
 interface PersonInfo {
   classes: NEUClass[],
   swearNumber: number
