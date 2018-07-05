@@ -1,13 +1,16 @@
 import * as fs from "fs";
 import * as Discord from "discord.js";
+import {GameData, Game} from './rpg'
 const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
 
 interface People {
   [id: string] : PersonInfo
 }
-interface PersonInfo {
+export interface PersonInfo {
   classes: NEUClass[],
-  swearNumber: number
+  swearNumber: number,
+  game: string | undefined,
+  playingGame: boolean
 }
 interface NEUClass {
   // CS or ...
@@ -45,7 +48,27 @@ bot.on("messageDelete", (message) => {
 let obj: any = {}
 let channel: any
 let channelAssigned = false;
+
 bot.on("message", async message => {
+
+  // getting individuals info
+  let game: Game | null = null
+  let person: PersonInfo | null = null
+  let authorID = message.author.id; //use this to fetch
+  let returnCheck = checkIfExists(authorID);
+  if(returnCheck===undefined) {
+    people[authorID] = {
+      classes: [],
+      swearNumber: 0,
+      game: undefined,
+      playingGame: false
+    }
+
+    person = people[authorID]
+  }
+  else {
+    person = returnCheck
+  }
 
   /*
   if(message.author.username==="saulbot") {
@@ -59,6 +82,21 @@ bot.on("message", async message => {
     let cmd = args[0];
     let rest = message.content.substring(2 + cmd.length);
     console.log("check 1");
+
+    if(cmd == "rpg") {
+      game = new Game(person, message.channel, person.game)
+      person.playingGame = true
+    }
+    if(cmd == "quit") {
+      if(game !== null) {
+        people[message.author.id].game = game.sAExit()
+        // garbage cleanup
+        delete game._data
+        delete game._channel
+      }
+      person.playingGame = false
+      game = null
+    }
     if (cmd == "Shut") {
       if(message.author.username=="Winnie" || message.author.username=="Ryan") {
         if(!message.author.bot)
@@ -140,6 +178,13 @@ bot.on("message", async message => {
       bot.destroy()
     }
   }
+
+  if(person.playingGame===true) {
+    if(game !==null ) {
+      game.handleMessage(message)
+    }
+
+  }
   else {
     // parse
     let swearFound = 0
@@ -187,15 +232,7 @@ function lookForReference(initialClass: NEUClass, author:Discord.User): NEUClass
 }
 function buildFromParse(classList: string, author: Discord.User) {
   let authorID = author.id; //use this to fetch
-  console.log("check3")
-  let returnCheck = checkIfExists(authorID);
-  console.log("check 5..." + JSON.stringify(returnCheck))
-  if(returnCheck===undefined) {
-    people[authorID] = {
-      classes: [],
-      swearNumber: 0
-    }
-  }
+
   // begin parsing... classes need to be of format (*area of study**number* *section*,)**
   let splitClassList = classList.split(",");
   if(splitClassList[1][0]==" ") {
