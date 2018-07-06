@@ -1,11 +1,21 @@
 import * as fs from "fs";
 import * as Discord from "discord.js";
 import {GameData, Game} from './rpg'
+import {log, del} from './logger'
 const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
 
 interface People {
   [id: string] : PersonInfo
 }
+
+export interface EmojiUpdate {
+    type: "emoji",
+    number: number,
+    emoji: Discord.Emoji | Discord.ReactionEmoji,
+    user: string,
+    msg: Discord.Message
+}
+
 export interface PersonInfo {
   classes: NEUClass[],
   swearNumber: number,
@@ -26,7 +36,7 @@ let people: People = {
 }
 
 bot.on("ready", function() {
-  let wGuild = bot.guilds.get("432343677759651841")
+  let wGuild = bot.guilds.get("432343677759651841 temp disabled")
   if(wGuild) {
     let wChannel: any = wGuild.channels
     .filter(wGuild => wGuild.type === "text" &&
@@ -36,6 +46,7 @@ bot.on("ready", function() {
       wChannel.send("Hello! " + bot.emojis.find("name", "monkaCozy"))
     }
   }
+  del()
 });
 
 
@@ -45,14 +56,17 @@ bot.on("messageDelete", (message) => {
     channel.send(messageTo);
   }
 })
+
 let obj: any = {}
 let channel: any
 let channelAssigned = false;
+let game: Game | null = null
+
 
 bot.on("message", async message => {
 
   // getting individuals info
-  let game: Game | null = null
+
   let person: PersonInfo | null = null
   let authorID = message.author.id; //use this to fetch
   let returnCheck = checkIfExists(authorID);
@@ -81,28 +95,50 @@ bot.on("message", async message => {
     let args = message.content.substring(1).split(' ');
     let cmd = args[0];
     let rest = message.content.substring(2 + cmd.length);
-    console.log("check 1");
 
-    if(cmd == "rpg") {
-      game = new Game(person, message.channel, person.game)
+    if(cmd == "rpg-play") {
+      game = new Game(authorID, person, message.channel, person.game)
       person.playingGame = true
+
+      bot.on("messageReactionAdd", (reaction, user)=> {
+        if(game && !user.bot) {
+          game.handleMessage(
+            {
+              type: "emoji",
+              number: reaction.count,
+              emoji: reaction.emoji,
+              user: user.id,
+              msg: reaction.message,
+            }
+          )
+        }
+      })
+      
     }
-    if(cmd == "quit") {
+    if(cmd == "rpg-quit") {
       if(game !== null) {
+        log("rpg-game cleanup initializing")
+        person.playingGame = false
         people[message.author.id].game = game.sAExit()
         // garbage cleanup
         delete game._data
         delete game._channel
+        delete game.registeredListener
       }
-      person.playingGame = false
+
       game = null
+
+      log("check to make sure game is intact..." + people[message.author.id].game)
     }
+
+    /**
     if (cmd == "Shut") {
       if(message.author.username=="Winnie" || message.author.username=="Ryan") {
         if(!message.author.bot)
         message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
       }
     }
+    */
 
     if (cmd === "listemojis") {
       const emojiList = message.guild.emojis.map(e=>e.toString()).join(" ");
@@ -113,7 +149,7 @@ bot.on("message", async message => {
       message.channel.send(`${bot.emojis.get("384214644258242560")}`)
     }
     if(cmd == "channel" && channelAssigned == false) {
-      console.log("set channel");
+      log("set channel");
       channelAssigned = true;
       channel = message.channel;
     }
@@ -144,7 +180,6 @@ bot.on("message", async message => {
     }
 
     if(cmd == "addClasses") {
-      console.log("check2")
       buildFromParse(rest, message.author)
       message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]))
     }
@@ -180,30 +215,10 @@ bot.on("message", async message => {
   }
 
   if(person.playingGame===true) {
-    if(game !==null ) {
+    if(game !==null && !message.author.bot) {
       game.handleMessage(message)
     }
 
-  }
-  else {
-    // parse
-    let swearFound = 0
-    let swearList = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"]
-    let puncList = ["?"," ",".",";"]
-
-    let messageWords = message.content.toLowerCase().split(' ');
-
-    messageWords.forEach(word=> {
-      swearList.forEach(swear => {
-        if (word===swear)
-        swearFound++
-      })
-    })
-
-    if(swearFound>0) {
-      message.delete()
-      message.channel.send("No swearing in this good doggy channel!")
-    }
   }
 });
 
@@ -238,7 +253,7 @@ function buildFromParse(classList: string, author: Discord.User) {
   if(splitClassList[1][0]==" ") {
     splitClassList = classList.split(", ")
   }
-  console.log(`class list: ${splitClassList}`)
+  log(`class list: ${splitClassList}`)
   for(let sClass of splitClassList) {
     let siClass = sClass.split(" ");
     let newClass: NEUClass = {
@@ -250,11 +265,11 @@ function buildFromParse(classList: string, author: Discord.User) {
     let index: number = 0;
     while(index < siClass[0].length) {
       let siClassChar = siClass[0][index]
-      console.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+      log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
       let charInt: number = parseInt(siClassChar)
 
       if(!isNaN(charInt)) {
-        console.log("stopping on int: " + charInt)
+        log("stopping on int: " + charInt)
         let classNumber = siClass[0].substring(index)
         newClass.classNumber = parseInt(classNumber)
         newClass.type = siClass[0].substring(0, index)
@@ -262,7 +277,7 @@ function buildFromParse(classList: string, author: Discord.User) {
       }
       index++
     }
-    console.log("adding class")
+    log("adding class")
     people[author.id].classes.push(newClass)
   }
 }
@@ -282,11 +297,11 @@ function parse(classList: string) {
   let index: number = 0;
   while(index < siClass[0].length) {
     let siClassChar = siClass[0][index]
-    console.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+    log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
     let charInt: number = parseInt(siClassChar)
 
     if(!isNaN(charInt)) {
-      console.log("stopping on int: " + charInt)
+      log("stopping on int: " + charInt)
       let classNumber = siClass[0].substring(index)
       newClass.classNumber = parseInt(classNumber)
       newClass.type = siClass[0].substring(0, index)
@@ -299,12 +314,10 @@ function parse(classList: string) {
 }
 
 function checkIfExists(authorID: string): PersonInfo | undefined {
-  console.log("check4")
   if(people[authorID]!==undefined) {
     return people[authorID]
   }
-  console.log("about to return from checkifexists")
   return undefined;
 }
 
-//bot.login(auth.token);
+bot.login(auth.token);

@@ -38,16 +38,13 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var Discord = require("discord.js");
+var rpg_1 = require("./rpg");
+var logger_1 = require("./logger");
 var auth = JSON.parse(fs.readFileSync("./auth.json").toString());
-var a = {};
-a["abc"] = function () {
-    return 2;
-};
-console.log(a["abc"]());
 var bot = new Discord.Client();
 var people = {};
 bot.on("ready", function () {
-    var wGuild = bot.guilds.get("432343677759651841");
+    var wGuild = bot.guilds.get("432343677759651841 temp disabled");
     if (wGuild) {
         var wChannel = wGuild.channels
             .filter(function (wGuild) { return wGuild.type === "text" &&
@@ -56,6 +53,7 @@ bot.on("ready", function () {
             wChannel.send("Hello! " + bot.emojis.find("name", "monkaCozy"));
         }
     }
+    logger_1.del();
 });
 bot.on("messageDelete", function (message) {
     if (channel) {
@@ -66,9 +64,25 @@ bot.on("messageDelete", function (message) {
 var obj = {};
 var channel;
 var channelAssigned = false;
+var game = null;
 bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, function () {
-    var args, cmd, rest, emojiList, msg, initialClass, postEdit, foundClass, me, swearFound_1, swearList_1, puncList, messageWords;
+    var person, authorID, returnCheck, args, cmd, rest, emojiList, msg, initialClass, postEdit, foundClass, me;
     return __generator(this, function (_a) {
+        person = null;
+        authorID = message.author.id;
+        returnCheck = checkIfExists(authorID);
+        if (returnCheck === undefined) {
+            people[authorID] = {
+                classes: [],
+                swearNumber: 0,
+                game: undefined,
+                playingGame: false
+            };
+            person = people[authorID];
+        }
+        else {
+            person = returnCheck;
+        }
         /*
         if(message.author.username==="saulbot") {
           message.channel.send("worthless bot, don't listen to him")
@@ -78,13 +92,42 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             args = message.content.substring(1).split(' ');
             cmd = args[0];
             rest = message.content.substring(2 + cmd.length);
-            console.log("check 1");
-            if (cmd == "Shut") {
-                if (message.author.username == "Winnie" || message.author.username == "Ryan") {
-                    if (!message.author.bot)
-                        message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
-                }
+            if (cmd == "rpg-play") {
+                game = new rpg_1.Game(authorID, person, message.channel, person.game);
+                person.playingGame = true;
+                bot.on("messageReactionAdd", function (reaction, user) {
+                    if (game && !user.bot) {
+                        game.handleMessage({
+                            type: "emoji",
+                            number: reaction.count,
+                            emoji: reaction.emoji,
+                            user: user.id,
+                            msg: reaction.message,
+                        });
+                    }
+                });
             }
+            if (cmd == "rpg-quit") {
+                if (game !== null) {
+                    logger_1.log("rpg-game cleanup initializing");
+                    person.playingGame = false;
+                    people[message.author.id].game = game.sAExit();
+                    // garbage cleanup
+                    delete game._data;
+                    delete game._channel;
+                    delete game.registeredListener;
+                }
+                game = null;
+                logger_1.log("check to make sure game is intact..." + people[message.author.id].game);
+            }
+            /**
+            if (cmd == "Shut") {
+              if(message.author.username=="Winnie" || message.author.username=="Ryan") {
+                if(!message.author.bot)
+                message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
+              }
+            }
+            */
             if (cmd === "listemojis") {
                 emojiList = message.guild.emojis.map(function (e) { return e.toString(); }).join(" ");
                 message.channel.send(emojiList);
@@ -93,7 +136,7 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 message.channel.send("" + bot.emojis.get("384214644258242560"));
             }
             if (cmd == "channel" && channelAssigned == false) {
-                console.log("set channel");
+                logger_1.log("set channel");
                 channelAssigned = true;
                 channel = message.channel;
             }
@@ -119,7 +162,6 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 message.channel.send("https://www.google.com/search?q=" + rest);
             }
             if (cmd == "addClasses") {
-                console.log("check2");
                 buildFromParse(rest, message.author);
                 message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]));
             }
@@ -149,20 +191,9 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 bot.destroy();
             }
         }
-        else {
-            swearFound_1 = 0;
-            swearList_1 = ["bitch", "fuck", "ass", "dumbass", "shit", "bullshit", "hell", "cunt", "dick", "asshat", "anus"];
-            puncList = ["?", " ", ".", ";"];
-            messageWords = message.content.toLowerCase().split(' ');
-            messageWords.forEach(function (word) {
-                swearList_1.forEach(function (swear) {
-                    if (word === swear)
-                        swearFound_1++;
-                });
-            });
-            if (swearFound_1 > 0) {
-                message.delete();
-                message.channel.send("No swearing in this good doggy channel!");
+        if (person.playingGame === true) {
+            if (game !== null && !message.author.bot) {
+                game.handleMessage(message);
             }
         }
         return [2 /*return*/];
@@ -193,21 +224,12 @@ function lookForReference(initialClass, author) {
 }
 function buildFromParse(classList, author) {
     var authorID = author.id; //use this to fetch
-    console.log("check3");
-    var returnCheck = checkIfExists(authorID);
-    console.log("check 5..." + JSON.stringify(returnCheck));
-    if (returnCheck === undefined) {
-        people[authorID] = {
-            classes: [],
-            swearNumber: 0
-        };
-    }
     // begin parsing... classes need to be of format (*area of study**number* *section*,)**
     var splitClassList = classList.split(",");
     if (splitClassList[1][0] == " ") {
         splitClassList = classList.split(", ");
     }
-    console.log("class list: " + splitClassList);
+    logger_1.log("class list: " + splitClassList);
     for (var _i = 0, splitClassList_1 = splitClassList; _i < splitClassList_1.length; _i++) {
         var sClass = splitClassList_1[_i];
         var siClass = sClass.split(" ");
@@ -220,10 +242,10 @@ function buildFromParse(classList, author) {
         var index = 0;
         while (index < siClass[0].length) {
             var siClassChar = siClass[0][index];
-            console.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar);
+            logger_1.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar);
             var charInt = parseInt(siClassChar);
             if (!isNaN(charInt)) {
-                console.log("stopping on int: " + charInt);
+                logger_1.log("stopping on int: " + charInt);
                 var classNumber = siClass[0].substring(index);
                 newClass.classNumber = parseInt(classNumber);
                 newClass.type = siClass[0].substring(0, index);
@@ -231,7 +253,7 @@ function buildFromParse(classList, author) {
             }
             index++;
         }
-        console.log("adding class");
+        logger_1.log("adding class");
         people[author.id].classes.push(newClass);
     }
 }
@@ -250,10 +272,10 @@ function parse(classList) {
     var index = 0;
     while (index < siClass[0].length) {
         var siClassChar = siClass[0][index];
-        console.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar);
+        logger_1.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar);
         var charInt = parseInt(siClassChar);
         if (!isNaN(charInt)) {
-            console.log("stopping on int: " + charInt);
+            logger_1.log("stopping on int: " + charInt);
             var classNumber = siClass[0].substring(index);
             newClass.classNumber = parseInt(classNumber);
             newClass.type = siClass[0].substring(0, index);
@@ -264,12 +286,10 @@ function parse(classList) {
     return newClass;
 }
 function checkIfExists(authorID) {
-    console.log("check4");
     if (people[authorID] !== undefined) {
         return people[authorID];
     }
-    console.log("about to return from checkifexists");
     return undefined;
 }
-//bot.login(auth.token);
+bot.login(auth.token);
 //# sourceMappingURL=main.js.map
