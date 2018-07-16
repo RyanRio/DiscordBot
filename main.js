@@ -43,6 +43,7 @@ var logger_1 = require("./logger");
 var auth = JSON.parse(fs.readFileSync("./auth.json").toString());
 var bot = new Discord.Client();
 var people = {};
+var games = {};
 bot.on("ready", function () {
     var wGuild = bot.guilds.get("432343677759651841 temp disabled");
     if (wGuild) {
@@ -65,11 +66,12 @@ var obj = {};
 var channel;
 var channelAssigned = false;
 bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, function () {
-    var person, authorID, returnCheck, args, cmd, rest, emojiList, msg, initialClass, postEdit, foundClass, me;
+    var person, authorID, returnCheck, game, args, cmd, rest, gref, emojiList, msg, initialClass, postEdit, foundClass, me, gref;
     return __generator(this, function (_a) {
         authorID = message.author.id;
         returnCheck = checkIfExists(authorID);
         if (returnCheck === undefined) {
+            logger_1.logger.log("couldnt find person, returncheck undefined");
             people[authorID] = {
                 classes: [],
                 swearNumber: 0,
@@ -79,8 +81,10 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             person = people[authorID];
         }
         else {
+            logger_1.logger.log("found person");
             person = returnCheck;
         }
+        game = games[authorID];
         /*
         if(message.author.username==="saulbot") {
           message.channel.send("worthless bot, don't listen to him")
@@ -92,11 +96,13 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             rest = message.content.substring(2 + cmd.length);
             if (cmd == "rpg-play") {
                 if (!person.playingGame) {
-                    person.GameRef = new rpg_1.Game(authorID, person, message.channel, person.game);
+                    games[authorID] = new rpg_1.Game(authorID, person, message.channel, person.game);
+                    logger_1.logger.log("game ref created");
                     bot.on("messageReactionAdd", function (reaction, user) {
-                        if (person.GameRef && !user.bot) {
+                        var gref = games[authorID];
+                        if (gref && !user.bot) {
                             logger_1.logger.log("reaction added!");
-                            person.GameRef.handleMessage({
+                            gref.handleMessage({
                                 type: "emoji",
                                 user: user.id,
                                 _reaction: reaction
@@ -107,19 +113,21 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 person.playingGame = true;
             }
             if (cmd == "rpg-quit") {
-                if (person.GameRef !== undefined) {
+                gref = games[authorID];
+                if (gref !== undefined) {
                     logger_1.logger.log("rpg-game cleanup initializing");
                     person.playingGame = false;
-                    person.game = person.GameRef.sAExit();
+                    person.game = gref.sAExit();
                     // garbage cleanup
-                    delete person.GameRef._data;
-                    delete person.GameRef._channel;
-                    delete person.GameRef.registeredListener;
-                    delete person.GameRef.handleMessage;
-                    delete person.GameRef.sAExit;
+                    delete gref._data;
+                    delete gref._channel;
+                    delete gref.registeredListener;
+                    delete gref.handleMessage;
+                    delete gref.sAExit;
+                    logger_1.logger.log(delete games[authorID]);
                 }
-                person.GameRef = undefined;
-                logger_1.logger.log("check to make sure game is intact..." + people[message.author.id].game);
+                // person[1].GameRef = undefined
+                logger_1.logger.log("check to make sure game is intact..." + person.game);
             }
             /**
             if (cmd == "Shut") {
@@ -155,10 +163,6 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
                 else {
                     message.channel.send("You lose!");
                 }
-            }
-            if (cmd == "debug") {
-                logger_1.logger.debug = !logger_1.logger.debug;
-                message.channel.send("debugging is now set to: " + logger_1.logger.debug);
             }
             if (cmd == "score") {
                 message.channel.send(obj[message.author.username]);
@@ -197,8 +201,9 @@ bot.on("message", function (message) { return __awaiter(_this, void 0, void 0, f
             }
         }
         if (person.playingGame === true) {
-            if (person.GameRef !== undefined && !message.author.bot) {
-                person.GameRef.handleMessage(message);
+            gref = games[authorID];
+            if (gref !== undefined && !message.author.bot) {
+                gref.handleMessage(message);
             }
         }
         return [2 /*return*/];
@@ -296,5 +301,10 @@ function checkIfExists(authorID) {
     }
     return undefined;
 }
-bot.login(auth.token);
+console.log("logging in");
+bot.login(auth.token).then(function () {
+    console.log("logged in");
+}).catch(function (err) {
+    console.log(err);
+});
 //# sourceMappingURL=main.js.map

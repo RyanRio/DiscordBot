@@ -6,7 +6,7 @@ const logFile = "log.txt"
 let date = new Date()
 
 class Logger {
-    debug: boolean = false
+    debug: boolean = true
     log(msg: any, append?: boolean) {
         if(this.debug) {
             if(typeof msg !== "string") {

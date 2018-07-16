@@ -6,7 +6,7 @@ var logFile = "log.txt";
 var date = new Date();
 var Logger = /** @class */ (function () {
     function Logger() {
-        this.debug = false;
+        this.debug = true;
     }
     Logger.prototype.log = function (msg, append) {
         if (this.debug) {

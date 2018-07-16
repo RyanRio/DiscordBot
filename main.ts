@@ -18,8 +18,11 @@ export interface PersonInfo {
   classes: NEUClass[],
   swearNumber: number,
   game: string | undefined,
-  playingGame: boolean,
-  GameRef?: Game
+  playingGame: boolean
+}
+
+export interface Games {
+  [id: string]: Game
 }
 interface NEUClass {
   // CS or ...
@@ -31,6 +34,10 @@ interface NEUClass {
 let bot = new Discord.Client()
 
 let people: People = {
+
+}
+
+let games: Games = {
 
 }
 
@@ -69,6 +76,7 @@ bot.on("message", async message => {
   let authorID = message.author.id; //use this to fetch
   let returnCheck = checkIfExists(authorID);
   if(returnCheck===undefined) {
+    logger.log("couldnt find person, returncheck undefined")
     people[authorID] = {
       classes: [],
       swearNumber: 0,
@@ -79,9 +87,11 @@ bot.on("message", async message => {
     person = people[authorID]
   }
   else {
+    logger.log("found person")
     person = returnCheck
   }
 
+  let game: Game | undefined = games[authorID]
   /*
   if(message.author.username==="saulbot") {
     message.channel.send("worthless bot, don't listen to him")
@@ -96,11 +106,13 @@ bot.on("message", async message => {
 
     if(cmd == "rpg-play") {
       if(!person.playingGame) {
-        person.GameRef = new Game(authorID, person, message.channel, person.game)
+        games[authorID] = new Game(authorID, person, message.channel, person.game)
+        logger.log("game ref created")
         bot.on("messageReactionAdd", (reaction, user)=> {
-          if(person.GameRef && !user.bot) {
+          let gref = games[authorID]
+          if(gref && !user.bot) {
             logger.log("reaction added!")
-            person.GameRef.handleMessage(
+            gref.handleMessage(
               {
                 type: "emoji",
                 user: user.id,
@@ -113,21 +125,23 @@ bot.on("message", async message => {
       person.playingGame = true
     }
     if(cmd == "rpg-quit") {
-      if(person.GameRef !== undefined) {
+      let gref = games[authorID]
+      if(gref !== undefined) {
         logger.log("rpg-game cleanup initializing")
         person.playingGame = false
-        person.game = person.GameRef.sAExit()
+        person.game = gref.sAExit()
         // garbage cleanup
-        delete person.GameRef._data
-        delete person.GameRef._channel
-        delete person.GameRef.registeredListener
-        delete person.GameRef.handleMessage
-        delete person.GameRef.sAExit
+        delete gref._data
+        delete gref._channel
+        delete gref.registeredListener
+        delete gref.handleMessage
+        delete gref.sAExit
+        logger.log(delete games[authorID])
       }
 
-      person.GameRef = undefined
+      // person[1].GameRef = undefined
 
-      logger.log("check to make sure game is intact..." + people[message.author.id].game)
+      logger.log("check to make sure game is intact..." + person.game)
     }
 
     /**
@@ -168,10 +182,6 @@ bot.on("message", async message => {
       else {
         message.channel.send("You lose!")
       }
-    }
-    if(cmd=="debug") {
-      logger.debug = !logger.debug
-      message.channel.send("debugging is now set to: " + logger.debug)
     }
 
     if(cmd == "score") {
@@ -218,8 +228,9 @@ bot.on("message", async message => {
   }
 
   if(person.playingGame===true) {
-    if(person.GameRef !==undefined && !message.author.bot) {
-      person.GameRef.handleMessage(message)
+    let gref = games[authorID]
+    if(gref !==undefined && !message.author.bot) {
+      gref.handleMessage(message)
     }
 
   }
@@ -323,4 +334,8 @@ function checkIfExists(authorID: string): PersonInfo | undefined {
   return undefined;
 }
 
-bot.login(auth.token);
+console.log("logging in")
+bot.login(auth.token).then(()=> {
+  console.log("logged in")
+}).catch(err=> {
+  console.log(err)})
