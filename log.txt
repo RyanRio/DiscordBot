@@ -1,4 +1,0 @@
-
-{"msg":"game being created from default with person: {\"classes\":[],\"swearNumber\":0,\"playingGame\":false}","time":1530904686969}
-{"msg":"content: +rpg-play awaiting response: true","time":1530904686969}
-{"msg":"looking for emoji: regional_indicator_f","time":1530904686969}

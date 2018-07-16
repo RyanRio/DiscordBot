@@ -51,15 +51,18 @@ var Game = /** @class */ (function () {
         var _this = this;
         this.cMSGID = "";
         this.emojiList = [];
+        //last message sent
+        this.lms = undefined;
         if (!gameData) {
-            logger_1.log("game being created from default with person: " + JSON.stringify(_person));
+            logger_1.logger.log("game being created from default with person: " + JSON.stringify(_person));
             this._data = {
                 person: _person,
-                pID: ID
+                pID: ID,
+                stats: []
             };
         }
         else {
-            logger_1.log("game being created from inputted data");
+            logger_1.logger.log("game being created from inputted data");
             this._data = JSON.parse(gameData);
         }
         this._channel = channel;
@@ -67,29 +70,75 @@ var Game = /** @class */ (function () {
         this.awaitingResponse = true;
         this.initialized = false;
         this.initGame().then(function (val) {
-            logger_1.log(val);
+            logger_1.logger.log(val);
             _this.awaitingResponse = false;
             _this.initialized = true;
         });
     }
     Game.prototype.sAExit = function () {
-        logger_1.log("saving with data: " + JSON.stringify(this._data));
+        logger_1.logger.log("saving with data: " + JSON.stringify(this._data));
         return JSON.stringify(this._data);
     };
     Game.prototype.initGame = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var result;
+            var _a, mapping, embed, result;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         //sending stat builder here
-                        this.emojiList = ["regional_indicator_f"];
-                        this._channel.send("abc").then(function (msg) {
+                        this.emojiList = ["🇫"];
+                        mapping = (_a = {},
+                            _a["🇫"] = "Fear",
+                            _a);
+                        embed = {
+                            embed: {
+                                color: 3447003,
+                                title: "Stat Builder",
+                                description: "Set your stats for your definitely not dark souls playthrough",
+                                fields: [
+                                    {
+                                        name: "Strength",
+                                        value: "0"
+                                    },
+                                    {
+                                        name: "Dexterity",
+                                        value: "0"
+                                    },
+                                    {
+                                        name: "Vigor",
+                                        value: "0"
+                                    },
+                                    {
+                                        name: "Fear",
+                                        value: "0"
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            }
+                        };
+                        this._channel.send(embed).then(function (msg) {
+                            _this.lms = msg;
                             if (msg instanceof Discord.Message) {
                                 _this.emojiList.forEach(function (val) {
-                                    logger_1.log("looking for emoji: " + val);
-                                    msg.react("🇫");
+                                    msg.react(val).catch(function (err) {
+                                        logger_1.logger.log("reaction failed because of: " + JSON.stringify(err));
+                                    });
+                                });
+                                _this.registeredListener.on("emojiIncrease", function (emoji) {
+                                    if (_this.lms) {
+                                        if (_this.lms instanceof Discord.Message) {
+                                            var name_1 = mapping[emoji.name];
+                                            var fField = embed.embed.fields.find(function (field) {
+                                                return field.name === name_1;
+                                            });
+                                            if (fField)
+                                                fField.value = (parseInt(fField.value) + 1).toString();
+                                            _this.lms.edit(embed).then(function (uMsg) {
+                                                _this.lms = uMsg;
+                                            });
+                                        }
+                                    }
                                 });
                             }
                         });
@@ -97,30 +146,32 @@ var Game = /** @class */ (function () {
                         this.awaitingResponse = true;
                         return [4 /*yield*/, new Promise(function (resolve) {
                                 _this.registeredListener.on("complete", function () {
-                                    logger_1.log("heard complete!");
+                                    logger_1.logger.log("heard complete!");
+                                    // put stats into game data before resolving... TODO
                                     resolve(true);
                                 });
                             }).catch(function (reason) {
-                                logger_1.log(reason);
+                                logger_1.logger.log(reason);
                             })];
                     case 1:
-                        result = _a.sent();
+                        result = _b.sent();
                         return [2 /*return*/, result];
                 }
             });
         });
     };
     Game.prototype.handleMessage = function (msg) {
+        var _this = this;
         if (msg instanceof Discord.Message) {
             if (msg.channel !== this._channel) {
                 //update channel
                 this._channel = msg.channel;
             }
-            logger_1.log("content: " + msg.content + " awaiting response: " + this.awaitingResponse);
+            logger_1.logger.log("content: " + msg.content + " awaiting response: " + this.awaitingResponse);
             //figure out if msg is in response
             if (this.awaitingResponse) {
                 if (msg.content === "complete") {
-                    logger_1.log("emitting complete");
+                    logger_1.logger.log("emitting complete");
                     this.registeredListener.emit("complete");
                 }
             }
@@ -129,18 +180,35 @@ var Game = /** @class */ (function () {
         else {
             // only notice the emoji update if the user is the same
             if (this.awaitingResponse) {
+                logger_1.logger.log("received emoji with id: " + msg._reaction.emoji.name);
                 if (this._data.pID === msg.user) {
                     if (this.emojiList.find(function (val) {
-                        return msg.emoji.id === val;
+                        return msg._reaction.emoji.name === val;
                     })) {
+                        logger_1.logger.log("found emoji");
                         // found the emoji
-                        var reaction = msg.msg.reactions.get(msg.emoji.id);
-                        if (reaction)
-                            reaction.count = 1;
+                        msg._reaction.remove(msg.user).then(function () {
+                            _this.registeredListener.emit("emojiIncrease", msg._reaction.emoji);
+                        });
+                        /*
+                        let reactionArray = msg.msg.reactions.array()
+
+  
+                        reactionArray.forEach(val=> {
+                            val.fetchUsers().then(user=> {
+                                let users = user.array()
+                                users.forEach(usr=> {
+                                    if(usr.bot===false) {
+                                        val.remove(usr)
+                                    }
+                                })
+                            })
+                        })
+                        */
                     }
                 }
                 else {
-                    msg.msg.clearReactions().then(function (resultMsg) {
+                    msg._reaction.message.clearReactions().then(function (resultMsg) {
                         resultMsg.react("<:regional_indicator_f:>");
                     });
                 }
