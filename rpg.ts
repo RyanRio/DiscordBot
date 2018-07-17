@@ -2,16 +2,15 @@
  * Beginning of rpg files...
  */
 
-import { PersonInfo, EmojiUpdate } from './main'
+import { PersonInfo, EmojiUpdate, log } from './main'
 import * as Discord from "discord.js";
 import { EventEmitter } from 'events';
-import {logger} from "./logger"
 
 export interface GameData {
     // among other things, stores a serialized version of the game in this property
     person: PersonInfo,
     pID: string,
-    stats: GameStat[]
+    stats: GameStat
 }
 
 export interface GameStat {
@@ -38,15 +37,15 @@ export class Game {
 
     constructor(ID:string, _person: PersonInfo, channel: sendableChannel, gameData?: string) {
         if(!gameData) {
-            logger.log("game being created from default with person: " + JSON.stringify(_person))
+            log("game being created from default with person: " + JSON.stringify(_person))
             this._data = {
                 person: _person,
                 pID: ID,
-                stats: []
+                stats: {}
             }
         }
         else {
-            logger.log("game being created from inputted data")
+            log("game being created from inputted data")
             this._data = JSON.parse(gameData)
         }
         this._channel = channel
@@ -54,7 +53,7 @@ export class Game {
         this.awaitingResponse = true
         this.initialized = false
         this.initGame().then((val)=> {
-            logger.log(val)
+            log(val)
             this.awaitingResponse = false
             this.initialized = true
         })
@@ -63,7 +62,7 @@ export class Game {
     }
 
     sAExit() {
-        logger.log("saving with data: " + JSON.stringify(this._data))
+        log("saving with data: " + JSON.stringify(this._data))
         return JSON.stringify(this._data)
     }
 
@@ -111,7 +110,7 @@ export class Game {
             if(msg instanceof Discord.Message) {
                 this.emojiList.forEach(val=> {
                     msg.react(val).catch(err=> {
-                        logger.log("reaction failed because of: " + JSON.stringify(err))
+                        log("reaction failed because of: " + JSON.stringify(err))
                     })
                 })
 
@@ -123,7 +122,10 @@ export class Game {
                             let fField = embed.embed.fields.find(field=> {
                                 return field.name===name
                             })
-                            if(fField) fField.value = (parseInt(fField.value) + 1).toString()
+                            if(fField) {
+                                fField.value = (parseInt(fField.value) + 1).toString()
+                                this._data.stats[fField.name] = parseInt(fField.value)
+                            } 
                             this.lms.edit(embed).then(uMsg=> {
                                 this.lms = uMsg
                             })
@@ -140,14 +142,14 @@ export class Game {
 
         let result = await new Promise(resolve => {
             this.registeredListener.on("complete", ()=> {
-                logger.log("heard complete!")
+                log("heard complete!")
 
                 // put stats into game data before resolving... TODO
 
                 resolve(true)
             })
         }).catch((reason)=> {
-            logger.log(reason)
+            log(reason)
         })
 
 
@@ -161,12 +163,12 @@ export class Game {
                 this._channel = msg.channel
             }
     
-            logger.log("content: " + msg.content + " awaiting response: " + this.awaitingResponse)
+            log("content: " + msg.content + " awaiting response: " + this.awaitingResponse)
             //figure out if msg is in response
             if(this.awaitingResponse) {
     
                 if(msg.content === "complete") {
-                    logger.log("emitting complete")
+                    log("emitting complete")
                     this.registeredListener.emit("complete")
                 }
             }
@@ -175,12 +177,12 @@ export class Game {
         else {
             // only notice the emoji update if the user is the same
             if(this.awaitingResponse) {
-                logger.log("received emoji with id: " + msg._reaction.emoji.name)
+                log("received emoji with id: " + msg._reaction.emoji.name)
                 if(this._data.pID === msg.user) {
                     if(this.emojiList.find((val)=> {
                         return msg._reaction.emoji.name===val
                     })) {
-                        logger.log("found emoji")
+                        log("found emoji")
                         // found the emoji
                         msg._reaction.remove(msg.user).then(()=> {
                             this.registeredListener.emit("emojiIncrease", msg._reaction.emoji)

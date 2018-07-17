@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as Discord from "discord.js";
 import {GameData, Game} from './rpg'
 import {logger} from './logger'
+export const log = logger.log
 const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
 
 interface People {
@@ -76,7 +77,7 @@ bot.on("message", async message => {
   let authorID = message.author.id; //use this to fetch
   let returnCheck = checkIfExists(authorID);
   if(returnCheck===undefined) {
-    logger.log("couldnt find person, returncheck undefined")
+    log("couldnt find person, returncheck undefined")
     people[authorID] = {
       classes: [],
       swearNumber: 0,
@@ -87,7 +88,7 @@ bot.on("message", async message => {
     person = people[authorID]
   }
   else {
-    logger.log("found person")
+    log("found person")
     person = returnCheck
   }
 
@@ -107,11 +108,11 @@ bot.on("message", async message => {
     if(cmd == "rpg-play") {
       if(!person.playingGame) {
         games[authorID] = new Game(authorID, person, message.channel, person.game)
-        logger.log("game ref created")
+        log("game ref created")
         bot.on("messageReactionAdd", (reaction, user)=> {
           let gref = games[authorID]
           if(gref && !user.bot) {
-            logger.log("reaction added!")
+            log("reaction added!")
             gref.handleMessage(
               {
                 type: "emoji",
@@ -127,7 +128,7 @@ bot.on("message", async message => {
     if(cmd == "rpg-quit") {
       let gref = games[authorID]
       if(gref !== undefined) {
-        logger.log("rpg-game cleanup initializing")
+        log("rpg-game cleanup initializing")
         person.playingGame = false
         person.game = gref.sAExit()
         // garbage cleanup
@@ -136,12 +137,12 @@ bot.on("message", async message => {
         delete gref.registeredListener
         delete gref.handleMessage
         delete gref.sAExit
-        logger.log(delete games[authorID])
+        log(delete games[authorID])
       }
 
       // person[1].GameRef = undefined
 
-      logger.log("check to make sure game is intact..." + person.game)
+      log("check to make sure game is intact..." + person.game)
     }
 
     /**
@@ -162,7 +163,7 @@ bot.on("message", async message => {
       message.channel.send(`${bot.emojis.get("384214644258242560")}`)
     }
     if(cmd == "channel" && channelAssigned == false) {
-      logger.log("set channel");
+      log("set channel");
       channelAssigned = true;
       channel = message.channel;
     }
@@ -267,7 +268,7 @@ function buildFromParse(classList: string, author: Discord.User) {
   if(splitClassList[1][0]==" ") {
     splitClassList = classList.split(", ")
   }
-  logger.log(`class list: ${splitClassList}`)
+  log(`class list: ${splitClassList}`)
   for(let sClass of splitClassList) {
     let siClass = sClass.split(" ");
     let newClass: NEUClass = {
@@ -279,11 +280,11 @@ function buildFromParse(classList: string, author: Discord.User) {
     let index: number = 0;
     while(index < siClass[0].length) {
       let siClassChar = siClass[0][index]
-      logger.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+      log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
       let charInt: number = parseInt(siClassChar)
 
       if(!isNaN(charInt)) {
-        logger.log("stopping on int: " + charInt)
+        log("stopping on int: " + charInt)
         let classNumber = siClass[0].substring(index)
         newClass.classNumber = parseInt(classNumber)
         newClass.type = siClass[0].substring(0, index)
@@ -291,7 +292,7 @@ function buildFromParse(classList: string, author: Discord.User) {
       }
       index++
     }
-    logger.log("adding class")
+    log("adding class")
     people[author.id].classes.push(newClass)
   }
 }
@@ -311,11 +312,11 @@ function parse(classList: string) {
   let index: number = 0;
   while(index < siClass[0].length) {
     let siClassChar = siClass[0][index]
-    logger.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+    log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
     let charInt: number = parseInt(siClassChar)
 
     if(!isNaN(charInt)) {
-      logger.log("stopping on int: " + charInt)
+      log("stopping on int: " + charInt)
       let classNumber = siClass[0].substring(index)
       newClass.classNumber = parseInt(classNumber)
       newClass.type = siClass[0].substring(0, index)

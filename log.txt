@@ -1,21 +1,15 @@
 
-{"msg":"couldnt find person, returncheck undefined","time":1531770439079}
-{"msg":"found person","time":1531770439079}
-{"msg":"found person","time":1531770439079}
-{"msg":"game being created from default with person: {\"classes\":[],\"swearNumber\":0,\"playingGame\":false}","time":1531770439079}
-{"msg":"game ref created","time":1531770439079}
-{"msg":"content: +rpg-play awaiting response: true","time":1531770439079}
-{"msg":"couldnt find person, returncheck undefined","time":1531770439079}
-{"msg":"reaction added!","time":1531770439079}
-{"msg":"received emoji with id: 🇫","time":1531770439079}
-{"msg":"found emoji","time":1531770439079}
-{"msg":"found person","time":1531770439079}
-{"msg":"rpg-game cleanup initializing","time":1531770439079}
-{"msg":"saving with data: {\"person\":{\"classes\":[],\"swearNumber\":0,\"playingGame\":false},\"pID\":\"179370789169004546\",\"stats\":[]}","time":1531770439079}
-{"msg":"true","time":1531770439079}
-{"msg":"check to make sure game is intact...{\"person\":{\"classes\":[],\"swearNumber\":0,\"playingGame\":false},\"pID\":\"179370789169004546\",\"stats\":[]}","time":1531770439079}
-{"msg":"found person","time":1531770439079}
-{"msg":"game being created from inputted data","time":1531770439079}
-{"msg":"game ref created","time":1531770439079}
-{"msg":"content: +rpg-play awaiting response: true","time":1531770439079}
-{"msg":"found person","time":1531770439079}
+{"msg":"couldnt find person, returncheck undefined","time":1531771342884}
+{"msg":"game being created from default with person: {\"classes\":[],\"swearNumber\":0,\"playingGame\":false}","time":1531771342884}
+{"msg":"game ref created","time":1531771342884}
+{"msg":"content: +rpg-play awaiting response: true","time":1531771342884}
+{"msg":"couldnt find person, returncheck undefined","time":1531771342884}
+{"msg":"reaction added!","time":1531771342884}
+{"msg":"received emoji with id: 🇫","time":1531771342884}
+{"msg":"found emoji","time":1531771342884}
+{"msg":"found person","time":1531771342884}
+{"msg":"rpg-game cleanup initializing","time":1531771342884}
+{"msg":"saving with data: {\"person\":{\"classes\":[],\"swearNumber\":0,\"playingGame\":false},\"pID\":\"179370789169004546\",\"stats\":{\"Fear\":1}}","time":1531771342884}
+{"msg":"true","time":1531771342884}
+{"msg":"check to make sure game is intact...{\"person\":{\"classes\":[],\"swearNumber\":0,\"playingGame\":false},\"pID\":\"179370789169004546\",\"stats\":{\"Fear\":1}}","time":1531771342884}
+{"msg":"couldnt find person, returncheck undefined","time":1531771342884}

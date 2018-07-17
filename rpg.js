@@ -58,7 +58,7 @@ var Game = /** @class */ (function () {
             this._data = {
                 person: _person,
                 pID: ID,
-                stats: []
+                stats: {}
             };
         }
         else {
@@ -132,8 +132,10 @@ var Game = /** @class */ (function () {
                                             var fField = embed.embed.fields.find(function (field) {
                                                 return field.name === name_1;
                                             });
-                                            if (fField)
+                                            if (fField) {
                                                 fField.value = (parseInt(fField.value) + 1).toString();
+                                                _this._data.stats[fField.name] = parseInt(fField.value);
+                                            }
                                             _this.lms.edit(embed).then(function (uMsg) {
                                                 _this.lms = uMsg;
                                             });
