@@ -23,7 +23,7 @@ export interface PersonInfo {
 }
 
 export interface Games {
-  [id: string]: Game
+  [id: string]: Game | null
 }
 interface NEUClass {
   // CS or ...
@@ -91,8 +91,6 @@ bot.on("message", async message => {
     log("found person")
     person = returnCheck
   }
-
-  let game: Game | undefined = games[authorID]
   /*
   if(message.author.username==="saulbot") {
     message.channel.send("worthless bot, don't listen to him")
@@ -127,17 +125,14 @@ bot.on("message", async message => {
     }
     if(cmd == "rpg-quit") {
       let gref = games[authorID]
-      if(gref !== undefined) {
+      if(gref !== null) {
         log("rpg-game cleanup initializing")
         person.playingGame = false
         person.game = gref.sAExit()
         // garbage cleanup
-        delete gref._data
-        delete gref._channel
-        delete gref.registeredListener
-        delete gref.handleMessage
-        delete gref.sAExit
-        log(delete games[authorID])
+        games[authorID] = null
+        log("garbage cleanup execution status: ")
+        log(delete games[authorID], true)
       }
 
       // person[1].GameRef = undefined
@@ -230,7 +225,7 @@ bot.on("message", async message => {
 
   if(person.playingGame===true) {
     let gref = games[authorID]
-    if(gref !==undefined && !message.author.bot) {
+    if(gref !==null && !message.author.bot) {
       gref.handleMessage(message)
     }
 

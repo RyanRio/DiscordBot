@@ -74,3 +74,5 @@ typings/
 .serverless
 
 auth.json
+*.js
+*.js.map
