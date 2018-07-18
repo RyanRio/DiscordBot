@@ -1,36 +1,8 @@
 import * as fs from "fs";
 import * as Discord from "discord.js";
-import {GameData, Game} from './rpg'
-import {logger} from './logger'
-export const log = logger.log
-const auth = JSON.parse(fs.readFileSync("./auth.json").toString())
-
-interface People {
-  [id: string] : PersonInfo
-}
-
-export interface EmojiUpdate {
-    type: "emoji",
-    user: string,
-    _reaction: Discord.MessageReaction
-}
-
-export interface PersonInfo {
-  classes: NEUClass[],
-  swearNumber: number,
-  game: string | undefined,
-  playingGame: boolean
-}
-
-export interface Games {
-  [id: string]: Game | null
-}
-interface NEUClass {
-  // CS or ...
-  type: string,
-  classNumber: number,
-  section: number
-}
+import {GameData, Game, People, Games, PersonInfo, NEUClass} from './assets/ts/rpg-types'
+import {logger} from './assets/ts/logger'
+const auth = JSON.parse(fs.readFileSync("./assets/auth.json").toString())
 
 let bot = new Discord.Client()
 
@@ -77,7 +49,7 @@ bot.on("message", async message => {
   let authorID = message.author.id; //use this to fetch
   let returnCheck = checkIfExists(authorID);
   if(returnCheck===undefined) {
-    log("couldnt find person, returncheck undefined")
+    logger.log("couldnt find person, returncheck undefined")
     people[authorID] = {
       classes: [],
       swearNumber: 0,
@@ -88,7 +60,7 @@ bot.on("message", async message => {
     person = people[authorID]
   }
   else {
-    log("found person")
+    logger.log("found person")
     person = returnCheck
   }
   /*
@@ -106,11 +78,11 @@ bot.on("message", async message => {
     if(cmd == "rpg-play") {
       if(!person.playingGame) {
         games[authorID] = new Game(authorID, person, message.channel, person.game)
-        log("game ref created")
+        logger.log("game ref created")
         bot.on("messageReactionAdd", (reaction, user)=> {
           let gref = games[authorID]
           if(gref && !user.bot) {
-            log("reaction added!")
+            logger.log("reaction added!")
             gref.handleMessage(
               {
                 type: "emoji",
@@ -126,18 +98,18 @@ bot.on("message", async message => {
     if(cmd == "rpg-quit") {
       let gref = games[authorID]
       if(gref !== null) {
-        log("rpg-game cleanup initializing")
+        logger.log("rpg-game cleanup initializing")
         person.playingGame = false
         person.game = gref.sAExit()
         // garbage cleanup
         games[authorID] = null
-        log("garbage cleanup execution status: ")
-        log(delete games[authorID], true)
+        logger.log("garbage cleanup execution status: ")
+        logger.log(delete games[authorID], true)
       }
 
       // person[1].GameRef = undefined
 
-      log("check to make sure game is intact..." + person.game)
+      logger.log("check to make sure game is intact..." + person.game)
     }
 
     /**
@@ -158,7 +130,7 @@ bot.on("message", async message => {
       message.channel.send(`${bot.emojis.get("384214644258242560")}`)
     }
     if(cmd == "channel" && channelAssigned == false) {
-      log("set channel");
+      logger.log("set channel");
       channelAssigned = true;
       channel = message.channel;
     }
@@ -263,7 +235,7 @@ function buildFromParse(classList: string, author: Discord.User) {
   if(splitClassList[1][0]==" ") {
     splitClassList = classList.split(", ")
   }
-  log(`class list: ${splitClassList}`)
+  logger.log(`class list: ${splitClassList}`)
   for(let sClass of splitClassList) {
     let siClass = sClass.split(" ");
     let newClass: NEUClass = {
@@ -275,11 +247,11 @@ function buildFromParse(classList: string, author: Discord.User) {
     let index: number = 0;
     while(index < siClass[0].length) {
       let siClassChar = siClass[0][index]
-      log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+      logger.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
       let charInt: number = parseInt(siClassChar)
 
       if(!isNaN(charInt)) {
-        log("stopping on int: " + charInt)
+        logger.log("stopping on int: " + charInt)
         let classNumber = siClass[0].substring(index)
         newClass.classNumber = parseInt(classNumber)
         newClass.type = siClass[0].substring(0, index)
@@ -287,7 +259,7 @@ function buildFromParse(classList: string, author: Discord.User) {
       }
       index++
     }
-    log("adding class")
+    logger.log("adding class")
     people[author.id].classes.push(newClass)
   }
 }
@@ -307,11 +279,11 @@ function parse(classList: string) {
   let index: number = 0;
   while(index < siClass[0].length) {
     let siClassChar = siClass[0][index]
-    log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
+    logger.log("checking parsing: " + JSON.stringify(siClass[0]) + ", on current char: " + siClassChar)
     let charInt: number = parseInt(siClassChar)
 
     if(!isNaN(charInt)) {
-      log("stopping on int: " + charInt)
+      logger.log("stopping on int: " + charInt)
       let classNumber = siClass[0].substring(index)
       newClass.classNumber = parseInt(classNumber)
       newClass.type = siClass[0].substring(0, index)

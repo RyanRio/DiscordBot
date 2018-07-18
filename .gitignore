@@ -74,5 +74,6 @@ typings/
 .serverless
 
 auth.json
-*.js
-*.js.map
+**.js
+**.js.map
+assets/img/

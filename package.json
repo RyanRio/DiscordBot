@@ -4,14 +4,17 @@
   "description": "best",
   "main": "main.js",
   "scripts": {
-    "compile": "tsc -p tsconfig.json"
+    "compile": "tsc -p tsconfig.json",
+    "start": "node dist/main.js"
   },
   "author": "Winnie Feng",
   "dependencies": {
+    "@types/glob": "^5.0.35",
     "discord.io": "^2.5.3",
     "discord.js": "^11.3.2",
     "enmap": "^2.6.3",
     "enmap-level": "^2.1.0",
+    "glob": "^7.1.2",
     "winston": "^3.0.0"
   },
   "devDependencies": {
