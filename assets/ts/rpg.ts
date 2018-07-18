@@ -33,7 +33,8 @@ export class Game {
             this._data = {
                 person: _person,
                 pID: ID,
-                stats: {}
+                stats: {},
+                pokemon: []
             }
         }
         else {
@@ -47,7 +48,22 @@ export class Game {
         this.initGame().then((val) => {
             logger.log(val)
             this.awaitingResponse = false
-            this.beginGame()
+            this.beginGame().then(res=> {
+                //beginGame succeeds
+                if(res) {
+                    if(this._data.stats["Luck"]===15) {
+                        //tadpole game
+                        this.registeredListener.emit("cPoke", "000")
+                    }
+                    else if(this._data.stats["Power"]===5 &&this._data.stats["Luck"]===5 &&this._data.stats["Speed"]===5) {
+                        //perfectly balanced, as all things should be
+                        this.registeredListener.emit("cPoke", "320-s")
+                    }
+                    else {
+                        // starters... events are all handled in beginGame so process can essentially end here
+                    }
+                }
+            })
         })
 
 
@@ -57,7 +73,7 @@ export class Game {
      * initialized is true at end of function
      * sets up all events now that the player has started a game
      */
-    beginGame() {
+    async beginGame() {
 
         /**
          * while ingame these keys can be pressed rather than having to type a full command
@@ -74,7 +90,7 @@ export class Game {
         
         //could put each of these functions just inside the listener however neater like this
         this.EventFuncs["cast"] = () => {
-            this._channel.send("uwu")
+            this.beginCast()
         }
 
         this.EventFuncs["reel"] = () => {
@@ -101,6 +117,8 @@ export class Game {
          * pokemonID - 3 digit number
          */
         this.EventFuncs["cPoke"] = (pokemonID: string) => {
+            //shinys have id format 'normalid-s'
+            //tadpole is 000
             glob(`./assets/img/${pokemonID}*`, (err, matches)=> {
                 logger.log("glob error: " + JSON.stringify(err))
                 fs.readFile(matches[0], (errFile, data)=> {
@@ -109,6 +127,18 @@ export class Game {
                     })
                     logger.log("read file error: " + errFile.message)
                 })
+            })
+
+            // determine stats, between 1 and 10
+
+            this._data.pokemon.push({
+                id: parseInt(pokemonID),
+                stats: {
+                    health: 10,
+                    strength: 10,
+                    speed: 10
+                },
+                shiny: false
             })
         }
 
@@ -121,17 +151,21 @@ export class Game {
 
 
         this.registeredListener.on("cast", this.EventFuncs["cast"])
-        this.registeredListener.on("reel", this.EventFuncs["cast"])
-        this.registeredListener.on("sUp", this.EventFuncs["cast"])
-        this.registeredListener.on("sDown", this.EventFuncs["cast"])
-        this.registeredListener.on("yank", this.EventFuncs["cast"])
-        this.registeredListener.on("train", this.EventFuncs["cast"])
-
-        let dif = this._data.stats["Difficulty"]
+        this.registeredListener.on("reel", this.EventFuncs["reel"])
+        this.registeredListener.on("sUp", this.EventFuncs["sUp"])
+        this.registeredListener.on("sDown", this.EventFuncs["sDown"])
+        this.registeredListener.on("yank", this.EventFuncs["yank"])
+        this.registeredListener.on("train", this.EventFuncs["train"])
+        this.registeredListener.on("cPoke", this.EventFuncs["cPoke"])
 
         // switch initialized and awaiting response flag to alert handlemessage that it can now emit
         this.awaitingResponse = true
         this.initialized = true
+
+        return true
+    }
+
+    private async beginCast() {
     }
 
     sAExit() {
@@ -143,26 +177,42 @@ export class Game {
 
     private async initGame() {
         //sending stat builder here
-        this.emojiList = ["🇫"]
+        this.emojiList = ["🇸", "🇱", "🇷", "🇵"]
 
         interface map {
             [name: string]: string
         }
         let mapping: map = {
-            ["🇫"]: "Difficulty"
+            ["🇵"]: "Power",
+            ["🇸"]: "Speed",
+            ["🇱"]: "Luck",
+            ["🇷"]: "Redo"
         }
 
         let embed = {
             embed: {
                 color: 3447003,
                 title: "Game Introduction",
-                description: "Set your level of difficulty and read the instructions!",
+                description: "Set your stats and read the instructions!",
                 fields:
                     [
                         {
-                            name: "Difficulty",
+                            name: "Warning!",
+                            value: "You can't decrease stats once you have put a point in, if you mess up click on the 🇷 reaction"
+                        },
+                        {
+                            name: "Luck - Do you feel like every game is rigged against you? Then up this stat and notice a dramatic increase in your luck... react with 🇱 to increase",
+                            value: "0"
+                        },
+                        {
+                            name: "Speed - Are you not a god-tier keyboard gamer like Saul? Then this stat will compensate for your crappy reaction time... react with 🇸 to increase",
+                            value: "0"
+                        },
+                        {
+                            name: "Power - Pretty self-explanatory, are you strong enough to pull up the pokemon or are you not... don't worry about being weak too much though, every pokemon can be caught at any level... react with 🇵 to increase",
                             value: "0"
                         }
+
                     ],
                 timestamp: new Date(),
             }
@@ -183,11 +233,20 @@ export class Game {
 
                             let name = mapping[emoji.name]
                             let fField = embed.embed.fields.find(field => {
-                                return field.name === name
+                                return field.name.split(" ")[0] === name
                             })
                             if (fField) {
                                 fField.value = (parseInt(fField.value) + 1).toString()
                                 this._data.stats[fField.name] = parseInt(fField.value)
+                            }
+                            else if(name==="Redo") {
+                                //reset all stats
+                                embed.embed.fields.forEach((field, index)=> {
+                                    // get rid of this number later... used for ignoring first field
+                                    if(index>0) {
+                                        field.value = "0"
+                                    }
+                                })
                             }
                             this.lms.edit(embed).then(uMsg => {
                                 this.lms = uMsg

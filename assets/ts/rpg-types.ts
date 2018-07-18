@@ -35,7 +35,18 @@ export interface GameData {
     // among other things, stores a serialized version of the game in this property
     person: PersonInfo,
     pID: string,
-    stats: GameStat
+    stats: GameStat,
+    pokemon: Pokemon[]
+}
+
+export interface Pokemon {
+    id: number,
+    stats: {
+        health: number,
+        speed: number,
+        strength: number
+    },
+    shiny: boolean
 }
 
 export interface GameStat {
