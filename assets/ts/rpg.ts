@@ -2,7 +2,7 @@
  * Beginning of rpg files...
  */
 
-import { PersonInfo, EmojiUpdate, GameData, Command, EventFunc } from './rpg-types'
+import { PersonInfo, EmojiUpdate, GameData, Command, EventFunc, StatRoller, Timer } from './rpg-types'
 import * as Discord from "discord.js";
 import { EventEmitter } from 'events';
 import { logger } from './logger'
@@ -15,6 +15,24 @@ type sendableChannel = Discord.TextChannel | Discord.DMChannel | Discord.GroupDM
  */
 export class Game {
 
+    /**
+     * For stopping the yank timer
+     */
+    private caughtFish: boolean = false
+    private pokeLost: boolean = false
+    private distCatch: number = 0
+    // how the pokemons and users base stats can scale, low medium and high
+    private baseSScale: {
+        l: StatRoller,
+        m: StatRoller,
+        h: StatRoller
+    }
+
+    // scales for mp and hp (mp for people, hp for pokemon)
+    private pSScale: {
+        mp: StatRoller,
+        hp: StatRoller
+    }
     private EventFuncs: EventFunc = {}
     private commands: Command = {}
     public _data: GameData
@@ -28,6 +46,18 @@ export class Game {
     private lms: Discord.Message | undefined | Discord.Message[] = undefined
 
     constructor(ID: string, _person: PersonInfo, channel: sendableChannel, gameData?: string) {
+
+        this.baseSScale = {
+            l: new StatRoller(1, 2, 0), //min 1 max 2 avg 1.5
+            m: new StatRoller(1, 3, 0), //min 1 max 3 avg 2
+            h: new StatRoller(3, 2, 0) // min 3 max 6 avg 4.5
+        }
+
+        this.pSScale = {
+            mp: new StatRoller(2, 25, 100), //min 102 max 150 avg 126.5
+            hp: new StatRoller(4, 40, 100) //min 104 max 260 avg 180
+        }
+
         if (!gameData) {
             logger.log("game being created from default with person: " + JSON.stringify(_person))
             this._data = {
@@ -45,17 +75,18 @@ export class Game {
         this.registeredListener = new EventEmitter()
         this.awaitingResponse = true
         this.initialized = false
+        // rename beginGame neccesary?
         this.initGame().then((val) => {
             logger.log(val)
             this.awaitingResponse = false
-            this.beginGame().then(res=> {
+            this.beginGame().then(res => {
                 //beginGame succeeds
-                if(res) {
-                    if(this._data.stats["Luck"]===15) {
+                if (res) {
+                    if (this._data.stats["Luck"] === 15) {
                         //tadpole game
                         this.registeredListener.emit("cPoke", "000")
                     }
-                    else if(this._data.stats["Power"]===5 &&this._data.stats["Luck"]===5 &&this._data.stats["Speed"]===5) {
+                    else if (this._data.stats["Power"] === 5 && this._data.stats["Luck"] === 5 && this._data.stats["Speed"] === 5) {
                         //perfectly balanced, as all things should be
                         this.registeredListener.emit("cPoke", "320-s")
                     }
@@ -75,38 +106,75 @@ export class Game {
      */
     async beginGame() {
 
+        // pokemon on the hook... can be caught with reel command
+
+        let pokeOL = false
+        let yankR = false
         /**
          * while ingame these keys can be pressed rather than having to type a full command
          * f - cast / begin fishing
          * r - reel
-         * q - speed up
-         * w - slow down
          * e - yank line
          * t - train pokemon
          */
 
         // manually assign... commands are one letter keys that point to a string to emit an event
         // eventFuncs are strings that refer to a one letter key which refer to a function
-        
+
         //could put each of these functions just inside the listener however neater like this
         this.EventFuncs["cast"] = () => {
-            this.beginCast()
+            this.pokeLost = false
+            this.distCatch = 8
+            this.caughtFish = false
+
+            let oT = new Timer(Math.floor(Math.random() * 6 + 1)).time().then(()=>
+            {
+                this._channel.send("A fish is on the line")
+                pokeOL = true
+                let lT = new Timer(1).time().then(() => {
+                    // if its still on the line then it gets away
+                    if (pokeOL) {
+                        this._channel.send("It got away!")
+                        this.pokeLost = true
+                    }
+                })
+            })
         }
 
         this.EventFuncs["reel"] = () => {
+            if (pokeOL) {
+                this.beginReel()
+                this._channel.send("Great job! You've still got it")
+                pokeOL = false
+            }
 
         }
 
-        this.EventFuncs["sUp"] = () => {
+        this.EventFuncs["yankR"] = () => {
+            yankR = true
+            this._channel.send("The pokemon is getting away!")
+            let lT = new Timer(2).time().then(() => {
+                // if its still on the line then it gets away
+                if (yankR) {
+                    this._channel.send("It got away!")
+                    this.pokeLost = true
+                }
+            })
 
         }
-
-        this.EventFuncs["sDown"] = () => {
-
-        }
-
         this.EventFuncs["yank"] = () => {
+            logger.log("yank heard!")
+            if(yankR) {
+                if(this.distCatch>0) {
+                    this.distCatch -= 2
+                    this._channel.send("Great job! You've still got it!")
+                    yankR = false
+                }
+                else {
+                    this.registeredListener.emit("cPoke", "100")
+                }
 
+            }
         }
 
         this.EventFuncs["train"] = () => {
@@ -117,15 +185,19 @@ export class Game {
          * pokemonID - 3 digit number
          */
         this.EventFuncs["cPoke"] = (pokemonID: string) => {
+            this.caughtFish = true
             //shinys have id format 'normalid-s'
             //tadpole is 000
-            glob(`./assets/img/${pokemonID}*`, (err, matches)=> {
+            glob(`./assets/img/${pokemonID}*`, (err, matches) => {
                 logger.log("glob error: " + JSON.stringify(err))
-                fs.readFile(matches[0], (errFile, data)=> {
+                fs.readFile(matches[0], (errFile, data) => {
                     this._channel.send({
                         file: data
                     })
-                    logger.log("read file error: " + errFile.message)
+                    if(errFile) {
+                        logger.log("read file error: " + errFile.message)
+                    }
+
                 })
             })
 
@@ -140,23 +212,20 @@ export class Game {
                 },
                 shiny: false
             })
+            this.distCatch = 0
         }
 
         this.commands["f"] = "cast"
         this.commands["r"] = "reel"
-        this.commands["q"] = "sUp"
-        this.commands["w"] = "sDown"
         this.commands["e"] = "yank"
         this.commands["t"] = "train"
 
-
         this.registeredListener.on("cast", this.EventFuncs["cast"])
         this.registeredListener.on("reel", this.EventFuncs["reel"])
-        this.registeredListener.on("sUp", this.EventFuncs["sUp"])
-        this.registeredListener.on("sDown", this.EventFuncs["sDown"])
         this.registeredListener.on("yank", this.EventFuncs["yank"])
         this.registeredListener.on("train", this.EventFuncs["train"])
         this.registeredListener.on("cPoke", this.EventFuncs["cPoke"])
+        this.registeredListener.on("yankR", this.EventFuncs["yankR"])
 
         // switch initialized and awaiting response flag to alert handlemessage that it can now emit
         this.awaitingResponse = true
@@ -165,7 +234,32 @@ export class Game {
         return true
     }
 
-    private async beginCast() {
+    private async beginReel() {
+
+        //begin loop of yanking and reeling
+        let t = new Timer(5)
+
+        this.castTimerLooping(t, () => {
+            t.retime(Math.floor(Math.random() * 6 + 1))
+            this.registeredListener.emit("yankR")
+        })
+
+    }
+
+    /**
+     * ONLY call in an async function
+     * @param t timer to run
+     * @param cb perform a function after the timer runs
+     */
+    private castTimerLooping(t: Timer, cb: () => void) {
+        t.time().then(
+            () => {
+                if (!this.caughtFish && !this.pokeLost) {
+                    cb()
+                    this.castTimerLooping(t, cb)
+                }
+            }
+        )
     }
 
     sAExit() {
@@ -239,11 +333,11 @@ export class Game {
                                 fField.value = (parseInt(fField.value) + 1).toString()
                                 this._data.stats[fField.name] = parseInt(fField.value)
                             }
-                            else if(name==="Redo") {
+                            else if (name === "Redo") {
                                 //reset all stats
-                                embed.embed.fields.forEach((field, index)=> {
+                                embed.embed.fields.forEach((field, index) => {
                                     // get rid of this number later... used for ignoring first field
-                                    if(index>0) {
+                                    if (index > 0) {
                                         field.value = "0"
                                     }
                                 })
@@ -290,8 +384,8 @@ export class Game {
             //figure out if msg is in response
             if (this.awaitingResponse) {
 
-                if(this.initialized) {
-                    if(msg.content.length===1) {
+                if (this.initialized) {
+                    if (msg.content.length === 1) {
                         logger.log("emitting event: " + this.commands[msg.content])
                         this.registeredListener.emit(this.commands[msg.content])
                     }

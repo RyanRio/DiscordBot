@@ -45,162 +45,164 @@ bot.on("message", async message => {
 
   // getting individuals info
 
-  let person: PersonInfo
-  let authorID = message.author.id; //use this to fetch
-  let returnCheck = checkIfExists(authorID);
-  if(returnCheck===undefined) {
-    logger.log("couldnt find person, returncheck undefined")
-    people[authorID] = {
-      classes: [],
-      swearNumber: 0,
-      game: undefined,
-      playingGame: false,
-    }
-
-    person = people[authorID]
-  }
-  else {
-    logger.log("found person")
-    person = returnCheck
-  }
-  /*
-  if(message.author.username==="saulbot") {
-    message.channel.send("worthless bot, don't listen to him")
-  }
-  */
-
-  if(message.content[0]=="+") {
-    
-    let args = message.content.substring(1).split(' ');
-    let cmd = args[0];
-    let rest = message.content.substring(2 + cmd.length);
-
-    if(cmd == "rpg-play") {
-      if(!person.playingGame) {
-        games[authorID] = new Game(authorID, person, message.channel, person.game)
-        logger.log("game ref created")
-        bot.on("messageReactionAdd", (reaction, user)=> {
-          let gref = games[authorID]
-          if(gref && !user.bot) {
-            logger.log("reaction added!")
-            gref.handleMessage(
-              {
-                type: "emoji",
-                user: user.id,
-                _reaction: reaction
-              }
-            )
-          }
-        })
-      }
-      person.playingGame = true
-    }
-    if(cmd == "rpg-quit") {
-      let gref = games[authorID]
-      if(gref !== null) {
-        logger.log("rpg-game cleanup initializing")
-        person.playingGame = false
-        person.game = gref.sAExit()
-        // garbage cleanup
-        games[authorID] = null
-        logger.log("garbage cleanup execution status: ")
-        logger.log(delete games[authorID], true)
+  if(!message.author.bot) {
+    let person: PersonInfo
+    let authorID = message.author.id; //use this to fetch
+    let returnCheck = checkIfExists(authorID);
+    if(returnCheck===undefined) {
+      logger.log("couldnt find person, returncheck undefined")
+      people[authorID] = {
+        classes: [],
+        swearNumber: 0,
+        game: undefined,
+        playingGame: false,
       }
 
-      // person[1].GameRef = undefined
-
-      logger.log("check to make sure game is intact..." + person.game)
+      person = people[authorID]
     }
-
-    /**
-    if (cmd == "Shut") {
-      if(message.author.username=="Winnie" || message.author.username=="Ryan") {
-        if(!message.author.bot)
-        message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
-      }
+    else {
+      logger.log("found person")
+      person = returnCheck
+    }
+    /*
+    if(message.author.username==="saulbot") {
+      message.channel.send("worthless bot, don't listen to him")
     }
     */
 
-    if (cmd === "listemojis") {
-      const emojiList = message.guild.emojis.map(e=>e.toString()).join(" ");
-      message.channel.send(emojiList);
-    }
-    
-    if(cmd=="peepoBirthday") {
-      message.channel.send(`${bot.emojis.get("384214644258242560")}`)
-    }
-    if(cmd == "channel" && channelAssigned == false) {
-      logger.log("set channel");
-      channelAssigned = true;
-      channel = message.channel;
-    }
+    if(message.content[0]=="+") {
+      
+      let args = message.content.substring(1).split(' ');
+      let cmd = args[0];
+      let rest = message.content.substring(2 + cmd.length);
 
-    if(cmd == "sob") {
-      message.channel.send(`${bot.emojis.find("name", "FeelsSobMan")}`)
-    }
-    if(cmd == "gamble") {
-
-      if(message.author.username=="Ryan" || message.author.username=="jreiss1923") {
-        message.channel.send("You win!")
-        if(obj[message.author.username])
-        obj[message.author.username] = obj[message.author.username] + 1
-        else
-        obj[message.author.username] = 1
+      if(cmd == "rpg-play") {
+        if(!person.playingGame) {
+          games[authorID] = new Game(authorID, person, message.channel, person.game)
+          logger.log("game ref created")
+          bot.on("messageReactionAdd", (reaction, user)=> {
+            let gref = games[authorID]
+            if(gref && !user.bot) {
+              logger.log("reaction added!")
+              gref.handleMessage(
+                {
+                  type: "emoji",
+                  user: user.id,
+                  _reaction: reaction
+                }
+              )
+            }
+          })
+        }
+        person.playingGame = true
       }
-      else {
-        message.channel.send("You lose!")
+      if(cmd == "rpg-quit") {
+        let gref = games[authorID]
+        if(gref !== null) {
+          logger.log("rpg-game cleanup initializing")
+          person.playingGame = false
+          person.game = gref.sAExit()
+          // garbage cleanup
+          games[authorID] = null
+          logger.log("garbage cleanup execution status: ")
+          logger.log(delete games[authorID], true)
+        }
+
+        // person[1].GameRef = undefined
+
+        logger.log("check to make sure game is intact..." + person.game)
+      }
+
+      /**
+      if (cmd == "Shut") {
+        if(message.author.username=="Winnie" || message.author.username=="Ryan") {
+          if(!message.author.bot)
+          message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
+        }
+      }
+      */
+
+      if (cmd === "listemojis") {
+        const emojiList = message.guild.emojis.map(e=>e.toString()).join(" ");
+        message.channel.send(emojiList);
+      }
+      
+      if(cmd=="peepoBirthday") {
+        message.channel.send(`${bot.emojis.get("384214644258242560")}`)
+      }
+      if(cmd == "channel" && channelAssigned == false) {
+        logger.log("set channel");
+        channelAssigned = true;
+        channel = message.channel;
+      }
+
+      if(cmd == "sob") {
+        message.channel.send(`${bot.emojis.find("name", "FeelsSobMan")}`)
+      }
+      if(cmd == "gamble") {
+
+        if(message.author.username=="Ryan" || message.author.username=="jreiss1923") {
+          message.channel.send("You win!")
+          if(obj[message.author.username])
+          obj[message.author.username] = obj[message.author.username] + 1
+          else
+          obj[message.author.username] = 1
+        }
+        else {
+          message.channel.send("You lose!")
+        }
+      }
+
+      if(cmd == "score") {
+        message.channel.send(obj[message.author.username])
+      }
+
+      if(cmd == "search") {
+        message.channel.send("https://www.google.com/search?q=" + rest)
+      }
+
+      if(cmd == "addClasses") {
+        buildFromParse(rest, message.author)
+        message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]))
+      }
+
+      if(cmd == "editClass") {
+        let msg = rest.split("=>")
+        let initialClass = parse(msg[0])
+        let postEdit = parse(msg[1])
+        let foundClass = lookForReference(initialClass, message.author)
+        if(foundClass !== undefined) {
+          foundClass.classNumber = postEdit.classNumber
+          foundClass.section = postEdit.section
+          foundClass.type = postEdit.type
+        }
+      }
+
+      if(cmd == "save") {
+        fs.writeFileSync("recallPeople.json", JSON.stringify(people))
+        message.channel.send("Data saved...")
+      }
+
+      if(cmd === "myClasses") {
+        let me = people[message.author.id]
+        if(me) {
+          message.channel.send(JSON.stringify(me))
+        }
+      }
+      
+      if(cmd === "stop") {
+        message.channel.send(`OK shutting down... ${bot.emojis.find("name", "FeelsSobMan")}`)
+        bot.destroy()
       }
     }
 
-    if(cmd == "score") {
-      message.channel.send(obj[message.author.username])
-    }
-
-    if(cmd == "search") {
-      message.channel.send("https://www.google.com/search?q=" + rest)
-    }
-
-    if(cmd == "addClasses") {
-      buildFromParse(rest, message.author)
-      message.channel.send("You are taking: " + JSON.stringify(people[message.author.id]))
-    }
-
-    if(cmd == "editClass") {
-      let msg = rest.split("=>")
-      let initialClass = parse(msg[0])
-      let postEdit = parse(msg[1])
-      let foundClass = lookForReference(initialClass, message.author)
-      if(foundClass !== undefined) {
-        foundClass.classNumber = postEdit.classNumber
-        foundClass.section = postEdit.section
-        foundClass.type = postEdit.type
+    if(person.playingGame===true) {
+      let gref = games[authorID]
+      if(gref !==null && !message.author.bot) {
+        gref.handleMessage(message)
       }
-    }
 
-    if(cmd == "save") {
-      fs.writeFileSync("recallPeople.json", JSON.stringify(people))
-      message.channel.send("Data saved...")
     }
-
-    if(cmd === "myClasses") {
-      let me = people[message.author.id]
-      if(me) {
-        message.channel.send(JSON.stringify(me))
-      }
-    }
-    
-    if(cmd === "stop") {
-      message.channel.send(`OK shutting down... ${bot.emojis.find("name", "FeelsSobMan")}`)
-      bot.destroy()
-    }
-  }
-
-  if(person.playingGame===true) {
-    let gref = games[authorID]
-    if(gref !==null && !message.author.bot) {
-      gref.handleMessage(message)
-    }
-
   }
 });
 
