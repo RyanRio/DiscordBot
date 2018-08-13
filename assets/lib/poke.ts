@@ -1,10 +1,11 @@
 /**
- * Beginning of rpg files...
+ * Beginning of poke files...
  */
 
-import { PersonInfo, EmojiUpdate, GameData, Command, EventFunc, StatRoller, Timer } from './rpg-types'
+import { EmojiUpdate, GameData, Command, EventFunc, StatRoller, Timer } from './poke-types'
 import * as Discord from "discord.js";
 import { EventEmitter } from 'events';
+import { PersonInfo } from './main-lib'
 import { logger } from './logger'
 import * as glob from "glob"
 import * as fs from 'fs';
@@ -124,14 +125,14 @@ export class Game {
         //could put each of these functions just inside the listener however neater like this
         this.EventFuncs["cast"] = () => {
             this.pokeLost = false
-            this.distCatch = 8
+            this.distCatch = 5
             this.caughtFish = false
 
             let oT = new Timer(Math.floor(Math.random() * 6 + 1)).time().then(()=>
             {
-                this._channel.send("A fish is on the line")
+                this._channel.send("A pokemon is on the line")
                 pokeOL = true
-                let lT = new Timer(1).time().then(() => {
+                let lT = new Timer(2).time().then(() => {
                     // if its still on the line then it gets away
                     if (pokeOL) {
                         this._channel.send("It got away!")
@@ -153,7 +154,7 @@ export class Game {
         this.EventFuncs["yankR"] = () => {
             yankR = true
             this._channel.send("The pokemon is getting away!")
-            let lT = new Timer(2).time().then(() => {
+            let lT = new Timer(3).time().then(() => {
                 // if its still on the line then it gets away
                 if (yankR) {
                     this._channel.send("It got away!")
@@ -165,13 +166,14 @@ export class Game {
         this.EventFuncs["yank"] = () => {
             logger.log("yank heard!")
             if(yankR) {
+                yankR = false
                 if(this.distCatch>0) {
                     this.distCatch -= 2
                     this._channel.send("Great job! You've still got it!")
-                    yankR = false
                 }
                 else {
-                    this.registeredListener.emit("cPoke", "100")
+                    yankR = false
+                    this.registeredListener.emit("cPoke", Math.floor(Math.random()*600 + 100).toString())
                 }
 
             }
@@ -240,7 +242,7 @@ export class Game {
         let t = new Timer(5)
 
         this.castTimerLooping(t, () => {
-            t.retime(Math.floor(Math.random() * 6 + 1))
+            t.retime(Math.floor(Math.random() * 6 + 3))
             this.registeredListener.emit("yankR")
         })
 

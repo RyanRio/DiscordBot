@@ -1,8 +1,7 @@
 import * as Discord from "discord.js";
-import { Game } from './rpg'
-
-export { Game } from './rpg'
-
+import { Game } from './poke'
+import { PersonInfo} from './main-lib'
+export { Game } from './poke'
 
 export class Timer {
 
@@ -68,32 +67,14 @@ export class StatRoller {
     }
 }
 
-export interface People {
-    [id: string]: PersonInfo
-}
-
 export interface EmojiUpdate {
     type: "emoji",
     user: string,
     _reaction: Discord.MessageReaction
 }
 
-export interface PersonInfo {
-    classes: NEUClass[],
-    swearNumber: number,
-    game: string | undefined,
-    playingGame: boolean
-}
-
 export interface Games {
     [id: string]: Game | null
-}
-
-export interface NEUClass {
-    // CS or ...
-    type: string,
-    classNumber: number,
-    section: number
 }
 
 export interface GameData {

@@ -1,7 +1,7 @@
 // simple logger so i can just read a file instead of cluttering the console
 
 import * as fs from "fs"
-const logFile = "./assets/ts/log.txt"
+const logFile = "./assets/lib/log.txt"
 
 let date = new Date()
 
