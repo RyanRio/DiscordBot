@@ -50,11 +50,22 @@ export class Lib {
     buildFromParse(classList: string, author: Discord.User) {
         let authorID = author.id; //use this to fetch
 
+        if (!this.people[author.id]) {
+            this.people[authorID] = {
+                classes: [],
+                swearNumber: 0,
+                game: undefined,
+                playingGame: false,
+            }
+        }
         // begin parsing... classes need to be of format (*area of study**number* *section*,)**
         let splitClassList = classList.split(",");
-        if (splitClassList[1][0] == " ") {
-            splitClassList = classList.split(", ")
+        if (splitClassList.length > 1) {
+            if (splitClassList[1][0] == " ") {
+                splitClassList = classList.split(", ")
+            }
         }
+
         logger.log(`class list: ${splitClassList}`)
         for (let sClass of splitClassList) {
             let siClass = sClass.split(" ");
@@ -123,16 +134,16 @@ export class Lib {
     }
 
     cDisplayCB(input: NEUClass) {
-        return `${input.type}${input.classNumber.toString()} ${input.section}`
+        return `${input.type}${input.classNumber.toString()} Section: ${input.section}`
     }
     /**
      * returns two string arrays, index 0 are names, index 1 are content
      * @param fields parses fields as a list of strings in order of name, content, name, ...
      * @param fvalfn function to call on each field value to make more appealing to the users eye
      */
-    embedMsg<T>(fields: T[], title: string, description: string, fvalfn?: ((input: any) => string), tick?: string) {
+    embedMsg<T>(fields: T[], title: string, description: string, fvalfn?: ((input: T) => string | [string, string]), tick?: string) {
         let odds: string[] = []
-        console.log(fields)
+        logger.log("fields: " + JSON.stringify(fields))
         let embed = {
             embed: {
                 color: 3447003,
@@ -143,19 +154,34 @@ export class Lib {
             }
         }
 
-        if (!tick) {
-            fields.forEach((val, index, array) => {
-                if (index % 2 === 0) {
-                    embed.embed.fields.push({ name: val, value: array[index + 1] })
-                }
-            })
+        if (fvalfn) {
+            if (tick) {
+                fields.forEach((val, index, array) => {
+                    embed.embed.fields.push({ name: `${tick} ${index + 1}`, value: fvalfn(val) })
+                })
+            }
+            else {
+                fields.forEach((val, index, array) => {
+                    let res = fvalfn(val)
+                    if(res[0]) {
+                        embed.embed.fields.push({ name: res[0], value: res[1]})
+                    }
+                    else if (index % 2 === 0) {
+                        embed.embed.fields.push({ name: val, value: fvalfn(array[index+1])})
+                    }
+                })
+            }
         }
         else {
-            if(fvalfn)
-            fields.forEach((val, index, array) => {
-                embed.embed.fields.push({ name: `${tick} ${index + 1}`, value: fvalfn(val) })
-            })
+            if (!tick) {
+                fields.forEach((val, index, array) => {
+                    if (index % 2 === 0) {
+                        embed.embed.fields.push({ name: val, value: array[index + 1] })
+                    }
+                })
+            }
         }
+
 
         return embed
     }
