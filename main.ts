@@ -113,15 +113,6 @@ bot.on("message", async message => {
         logger.log("check to make sure game is intact..." + person.game)
       }
 
-      /**
-      if (cmd == "Shut") {
-        if(message.author.username=="Winnie" || message.author.username=="Ryan") {
-          if(!message.author.bot)
-          message.channel.send("Shut the FUCK door to my anus because I like to suck lollipops in your nose");
-        }
-      }
-      */
-
       if (cmd === "listemojis") {
         const emojiList = message.guild.emojis.map(e => e.toString()).join(" ");
         message.channel.send(emojiList);
